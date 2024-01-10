@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+sqlalchemy
+pymssql
+python-dotenv
+pymemcache

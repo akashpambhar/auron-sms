@@ -1,0 +1,58 @@
+version: "3.8"
+
+services:    
+  memcached:
+    image: memcached:latest
+    container_name: memcached
+    ports:
+      - "11211:11211"
+    networks:
+      - docnetwork           
+
+  backend:
+    image: ${BACKEND_APP_NAME}
+    container_name: ${BACKEND_APP_NAME}
+    env_file:
+    - ./.env
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    volumes:
+      - ./backend/app:/app
+    networks:
+      - docnetwork          
+    ports:
+      - "8000:8000"   
+    depends_on:
+      - memcached
+
+  # frontend:
+  #   image: ${FRONTEND_APP_NAME}
+  #   build:
+  #     context: .
+  #     dockerfile: frontend/Dockerfile
+  #   container_name: ${FRONTEND_APP_NAME}
+  #   env_file:
+  #   - ./.env    
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - backend
+  #   ports:
+  #     - 80:80
+
+  sql_server:
+    image: mcr.microsoft.com/mssql/server
+    container_name: sql_server_container
+    environment:
+      SA_PASSWORD: SA_PASSWORD
+      ACCEPT_EULA: Y
+      MSSQL_PID: Express
+    ports:
+      - "1433:1433"
+    networks:
+      - docnetwork
+
+
+networks:
+  docnetwork:
+     driver: bridge
