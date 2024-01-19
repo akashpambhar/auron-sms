@@ -4,3 +4,7 @@ sqlalchemy
 pymssql
 python-dotenv
 pymemcache
+pydantic
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
