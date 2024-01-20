@@ -16,12 +16,6 @@
       </div>
 
       <!-- Alert -->
-      <fuse-alert class="mt-8" [appearance]="'outline'" [showIcon]="false" [type]="'info'">
-        You are browsing <strong>Fuse Demo</strong>. Click on the "Sign in" button to access the Demo and
-        Documentation.
-      </fuse-alert>
-
-      <!-- Alert -->
       <fuse-alert class="mt-8" *ngIf="showAlert" [appearance]="'outline'" [showIcon]="false" [type]="alert.type"
         [@shake]="alert.type === 'error'">
         {{alert.message}}
@@ -61,9 +55,6 @@
 
         <!-- Actions -->
         <div class="inline-flex items-center justify-between w-full mt-1.5">
-          <mat-checkbox class="-ml-2" [color]="'primary'" [formControlName]="'rememberMe'">
-            Remember me
-          </mat-checkbox>
           <a class="text-md font-medium text-primary-500 hover:underline" [routerLink]="['/forgot-password']">Forgot
             password?
           </a>
@@ -78,26 +69,6 @@
           <mat-progress-spinner *ngIf="signInForm.disabled" [diameter]="24"
             [mode]="'indeterminate'"></mat-progress-spinner>
         </button>
-
-        <!-- Separator -->
-        <div class="flex items-center mt-8">
-          <div class="flex-auto mt-px border-t"></div>
-          <div class="mx-2 text-secondary">Or continue with</div>
-          <div class="flex-auto mt-px border-t"></div>
-        </div>
-
-        <!-- Single sign-on buttons -->
-        <div class="flex items-center mt-8 space-x-4">
-          <button class="flex-auto" type="button" mat-stroked-button>
-            <mat-icon class="icon-size-5" [svgIcon]="'feather:facebook'"></mat-icon>
-          </button>
-          <button class="flex-auto" type="button" mat-stroked-button>
-            <mat-icon class="icon-size-5" [svgIcon]="'feather:twitter'"></mat-icon>
-          </button>
-          <button class="flex-auto" type="button" mat-stroked-button>
-            <mat-icon class="icon-size-5" [svgIcon]="'feather:github'"></mat-icon>
-          </button>
-        </div>
       </form>
     </div>
   </div>
@@ -154,3 +125,4 @@
     </div>
   </div>
 </div>
+
