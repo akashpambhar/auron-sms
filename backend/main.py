@@ -4,8 +4,9 @@ from typing import Annotated, Union
 from datetime import datetime, timedelta, timezone
 import json
 import os
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import Session
+from sqlalchemy import create_engine, text, select
+from sqlalchemy.orm import Session, Mapped, relationship
+from sqlalchemy.ext.declarative import declarative_base
 from fastapi.encoders import jsonable_encoder
 from dotenv import load_dotenv
 import pymssql
@@ -13,15 +14,18 @@ from pymemcache.client import base
 from pydantic import BaseModel
 from passlib.context import CryptContext
 from jose import JWTError, jwt
+from models import User, Role
+from schemas import UserSchema
+# import models
+from database import engine, SessionLocal, Base
 
 load_dotenv()
 
+Base.metadata.create_all(bind=engine)
+
+
 mc = base.Client((os.getenv("MC_SERVER"), 11211))
 
-SQL_DB = os.getenv("SQL_DB")
-SQL_USER = os.getenv("SQL_USER")
-SQL_PASSWORD = os.getenv("SQL_PASSWORD")
-SQL_SERVER = os.getenv("SQL_SERVER")
 
 SECRET_KEY = os.getenv("SECRET")
 ALGORITHM = "HS256"
@@ -31,10 +35,10 @@ fake_users_db = {
     "johndoe": {
         "id": 1,
         "username": "johndoe",
-        "full_name": "John Doe",
         "email": "johndoe@example.com",
         "password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
         "disabled": False,
+        "roles": [{"roleName": "user"}, {"roleName": "other"}],
     },
     "alice": {
         "id": 2,
@@ -43,6 +47,7 @@ fake_users_db = {
         "email": "alice@example.com",
         "password": "fakehashedsecret2",
         "disabled": True,
+        "roles": [{"roleName": "user"}, {"roleName": "other"}],
     },
 }
 
@@ -59,17 +64,6 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: Union[str, None] = None
-
-
-class User(BaseModel):
-    username: str
-    email: Union[str, None] = None
-    full_name: Union[str, None] = None
-    disabled: Union[bool, None] = None
-
-
-class UserInDB(User):
-    password: str
 
 
 def verify_password(plain_password, password):
@@ -127,52 +121,48 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
 
 
 async def get_current_active_user(
-    current_user: Annotated[User, Depends(get_current_user)]
+    current_user: Annotated[UserSchema.User, Depends(get_current_user)]
 ):
     if current_user.disabled:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
 
-@app.post("/token")
-async def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
-) -> Token:
-    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
-    )
-    return Token(access_token=access_token, token_type="bearer")
-
-
-@app.get("/users/me")
-async def read_users_me(
-    current_user: Annotated[User, Depends(get_current_active_user)]
+async def get_current_admin_user(
+    current_user: Annotated[UserSchema.User, Depends(get_current_active_user)]
 ):
+    if "admin" not in [role.roleName for role in current_user.roles]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to this resource",
+        )
     return current_user
 
 
-@app.get("/")
-async def hello_world(token: Annotated[str, Depends(oauth2_scheme)]):
-    return {"message": "Hello World"}
+async def get_current_normal_user(
+    current_user: Annotated[UserSchema.User, Depends(get_current_active_user)]
+):
+    if "user" not in [role.roleName for role in current_user.roles]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to this resource",
+        )
+    return current_user
 
 
-connection_string = f"mssql+pymssql://{SQL_USER}:{SQL_PASSWORD}@{SQL_SERVER}/{SQL_DB}"
-engine = create_engine(
-    connection_string,
-    creator=lambda: pymssql.connect(SQL_SERVER, SQL_USER, SQL_PASSWORD, SQL_DB),
-)
+async def get_current_other_user(
+    current_user: Annotated[UserSchema.User, Depends(get_current_active_user)]
+):
+    if "other" not in [role.roleName for role in current_user.roles]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to this resource",
+        )
+    return current_user
 
 
 def get_db():
-    db = Session(autocommit=False, autoflush=False, bind=engine)
+    db = SessionLocal()
     try:
         yield db
     finally:
@@ -201,6 +191,51 @@ def get_dbs():
     # convert statuses to dict
     dbs = json.loads(dbs)
     return dbs
+
+
+@app.post("/token")
+async def login_for_access_token(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
+) -> Token:
+    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires
+    )
+    return Token(access_token=access_token, token_type="bearer")
+
+
+@app.post("/signup")
+async def signup(userSignup: UserSchema.UserCreate, db: Session = Depends(get_db)):
+    # stmt = select(Role).where(Role.roleId == userSignup.role)
+    # print(db.exec(stmt))
+    # print(db.query(Role).filter(Role.roleId == userSignup.role).first())
+    s = db.execute(select(Role.Role)).first()
+    print(s[0].role_name)
+    # user = UserInDB(**userSignup.model_dump(exclude=['role']), role=db.query(Role).filter(Role.roleId == userSignup.role).first())
+    # user.roles = db.query(Role).filter(Role.id == userSignup.role).first()
+
+    # print(user)
+    return {"message": "received...."}
+
+
+@app.get("/users/me")
+async def read_users_me(
+    current_active_user: Annotated[UserSchema.User, Depends(get_current_active_user)]
+):
+    return current_active_user
+
+
+@app.get("/")
+async def hello_world(token: Annotated[str, Depends(oauth2_scheme)]):
+    print(token)
+    return {"message": "Hello World"}
 
 
 @app.get("/get_all_databases_cached")
