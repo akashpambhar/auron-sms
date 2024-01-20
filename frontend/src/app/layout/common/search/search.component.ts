@@ -158,6 +158,8 @@ export class SearchComponent implements OnChanges, OnInit, OnDestroy
                     {
                         // Store the result sets
                         this.resultSets = resultSets;
+                        console.log(resultSets);
+                        
 
                         // Execute the event
                         this.search.next(resultSets);

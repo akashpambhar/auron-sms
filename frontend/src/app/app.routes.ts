@@ -107,7 +107,7 @@ export const appRoutes: Route[] = [
         // },
         children: [
             // { path: 'example', loadChildren: () => import('app/modules/admin/example/example.routes') }
-            { path: 'example', component: ExampleComponent}
+            { path: 'example', component: LandingHomeComponent}
         ]
     }
 ];

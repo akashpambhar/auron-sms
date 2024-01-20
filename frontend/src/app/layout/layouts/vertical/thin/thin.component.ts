@@ -11,9 +11,9 @@ import { NavigationService } from 'app/core/navigation/navigation.service';
 import { Navigation } from 'app/core/navigation/navigation.types';
 
 
-import { QuickChatComponent } from 'app/layout/common/quick-chat/quick-chat.component';
+
 import { SearchComponent } from 'app/layout/common/search/search.component';
-import { ShortcutsComponent } from 'app/layout/common/shortcuts/shortcuts.component';
+
 import { UserComponent } from 'app/layout/common/user/user.component';
 import { Subject, takeUntil } from 'rxjs';
 
@@ -22,7 +22,7 @@ import { Subject, takeUntil } from 'rxjs';
     templateUrl  : './thin.component.html',
     encapsulation: ViewEncapsulation.None,
     standalone   : true,
-    imports      : [FuseLoadingBarComponent, FuseVerticalNavigationComponent, MatButtonModule, MatIconModule, FuseFullscreenComponent, SearchComponent, ShortcutsComponent, UserComponent, NgIf, RouterOutlet, QuickChatComponent],
+    imports      : [FuseLoadingBarComponent, FuseVerticalNavigationComponent, MatButtonModule, MatIconModule, FuseFullscreenComponent, SearchComponent, UserComponent, NgIf, RouterOutlet],
 })
 export class ThinLayoutComponent implements OnInit, OnDestroy
 {

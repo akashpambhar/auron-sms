@@ -12,7 +12,7 @@ import { Navigation } from 'app/core/navigation/navigation.types';
 
 
 import { SearchComponent } from 'app/layout/common/search/search.component';
-import { ShortcutsComponent } from 'app/layout/common/shortcuts/shortcuts.component';
+
 import { UserComponent } from 'app/layout/common/user/user.component';
 import { Subject, takeUntil } from 'rxjs';
 
@@ -21,7 +21,7 @@ import { Subject, takeUntil } from 'rxjs';
     templateUrl  : './material.component.html',
     encapsulation: ViewEncapsulation.None,
     standalone   : true,
-    imports      : [FuseLoadingBarComponent, NgIf, FuseVerticalNavigationComponent, MatButtonModule, MatIconModule, FuseFullscreenComponent, SearchComponent, ShortcutsComponent, UserComponent, FuseHorizontalNavigationComponent, RouterOutlet],
+    imports      : [FuseLoadingBarComponent, NgIf, FuseVerticalNavigationComponent, MatButtonModule, MatIconModule, FuseFullscreenComponent, SearchComponent, UserComponent, FuseHorizontalNavigationComponent, RouterOutlet],
 })
 export class MaterialLayoutComponent implements OnInit, OnDestroy
 {
