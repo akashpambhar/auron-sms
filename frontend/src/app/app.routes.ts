@@ -5,7 +5,6 @@ import { NoAuthGuard } from 'app/core/auth/guards/noAuth.guard';
 import { LayoutComponent } from 'app/layout/layout.component';
 import { AuthSignInComponent } from './modules/auth/sign-in/sign-in.component';
 import { ExampleComponent } from './modules/admin/example/example.component';
-import { MessagesComponent } from './layout/common/messages/messages.component';
 import { LandingHomeComponent } from './modules/landing/home/home.component';
 import { AuthSignUpComponent } from './modules/auth/sign-up/sign-up.component';
 
