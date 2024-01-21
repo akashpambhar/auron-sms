@@ -7,6 +7,7 @@ import os
 from sqlalchemy import create_engine, text, select
 from sqlalchemy.orm import Session, Mapped, relationship
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.exc import IntegrityError
 from fastapi.encoders import jsonable_encoder
 from dotenv import load_dotenv
 import pymssql
@@ -16,6 +17,7 @@ from passlib.context import CryptContext
 from jose import JWTError, jwt
 from models import User, Role
 from schemas import UserSchema
+
 # import models
 from database import engine, SessionLocal, Base
 
@@ -66,6 +68,14 @@ class TokenData(BaseModel):
     username: Union[str, None] = None
 
 
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
 def verify_password(plain_password, password):
     return pwd_context.verify(plain_password, password)
 
@@ -74,19 +84,21 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
-def get_user(db, username: str):
-    if username in db:
-        user_dict = db[username]
-        return UserInDB(**user_dict)
+def get_user(username: str, db: Session):
+    user = db.execute(select(User.User).where(User.User.username == username)).first()[
+        0
+    ]
 
-
-def authenticate_user(fake_db, username: str, password: str):
-    user = get_user(fake_db, username)
-    if not user:
-        return False
-    if not verify_password(password, user.password):
-        return False
-    return user
+    if user:
+        user_dict = UserSchema.UserInDB(
+            user_id=user.user_id,
+            username=user.username,
+            password=user.password,
+            email=user.email,
+            disabled=user.disabled,
+            role_id=user.role_id,
+        )
+        return UserSchema.UserInDB(**user_dict.model_dump())
 
 
 def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None):
@@ -100,7 +112,10 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
     return encoded_jwt
 
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+async def get_current_user(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    db: Annotated[Session, Depends(get_db)],
+):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -114,7 +129,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         token_data = TokenData(username=username)
     except JWTError:
         raise credentials_exception
-    user = get_user(fake_users_db, username=token_data.username)
+    user = get_user(username=token_data.username, db=db)
     if user is None:
         raise credentials_exception
     return user
@@ -161,12 +176,16 @@ async def get_current_other_user(
     return current_user
 
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+def authenticate_user(username: str, password: str, db: Session):
+    user = get_user(username, db)
+
+    if not user:
+        return False
+
+    if not verify_password(password, user.password):
+        return False
+
+    return user
 
 
 def load_dbs(refresh: bool = False):
@@ -195,9 +214,10 @@ def get_dbs():
 
 @app.post("/token")
 async def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: Annotated[Session, Depends(get_db)],
 ) -> Token:
-    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
+    user = authenticate_user(form_data.username, form_data.password, db)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -213,16 +233,41 @@ async def login_for_access_token(
 
 @app.post("/signup")
 async def signup(userSignup: UserSchema.UserCreate, db: Session = Depends(get_db)):
-    # stmt = select(Role).where(Role.roleId == userSignup.role)
-    # print(db.exec(stmt))
-    # print(db.query(Role).filter(Role.roleId == userSignup.role).first())
-    s = db.execute(select(Role.Role)).first()
-    print(s[0].role_name)
-    # user = UserInDB(**userSignup.model_dump(exclude=['role']), role=db.query(Role).filter(Role.roleId == userSignup.role).first())
-    # user.roles = db.query(Role).filter(Role.id == userSignup.role).first()
+    # Check if username or email already exists
+    existing_user = db.execute(
+        select(User.User).where(
+            (User.User.username == userSignup.username)
+            | (User.User.email == userSignup.email)
+        )
+    ).first()
 
-    # print(user)
-    return {"message": "received...."}
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username or email already exists",
+        )
+
+    user = User.User(
+        **userSignup.model_dump(exclude=["role_id"]),
+        role_id=db.execute(
+            select(Role.Role).where(Role.Role.role_id == userSignup.role_id)
+        )
+        .first()[0]
+        .role_id,
+    )
+    user.password = get_password_hash(user.password)
+
+    try:
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        return {"message": "User created successfully"}
+    except IntegrityError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error creating user: {str(e)}",
+        )
 
 
 @app.get("/users/me")

@@ -6,10 +6,10 @@ from database import Base
 class User(Base):
     __tablename__ = "user"
     user_id = Column(Integer, primary_key=True, index=True)
-    username = Column(String)
-    password = Column(String)
-    email = Column(String)
+    username = Column(String(255), unique=True, nullable=False)
+    password = Column(String, nullable=False)
+    email = Column(String(255), unique=True, nullable=False)
     disabled = Column(Boolean)
-    role_id = Column(Integer, ForeignKey("role.role_id"))
+    role_id = Column(Integer, ForeignKey("role.role_id"), default=3)
 
     role = relationship("Role")

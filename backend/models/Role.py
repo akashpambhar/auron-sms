@@ -5,4 +5,4 @@ from database import Base
 class Role(Base):
     __tablename__ = "role"
     role_id = Column(Integer, primary_key=True, index=True)
-    role_name = Column(String)
+    role_name = Column(String, nullable=False)
