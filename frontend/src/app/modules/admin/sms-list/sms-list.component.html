@@ -1,0 +1,73 @@
+<div class="flex flex-col flex-auto min-w-0">
+
+  <!-- Main -->
+  <div class="flex-auto p-6 sm:p-10">
+    <div class="form-container">
+
+      <mat-form-field class="w-full">
+        <mat-label>Search by Mobile Number</mat-label>
+        <input matInput [(ngModel)]="searchTerm" type="number" placeholder="97112345678">
+      </mat-form-field>
+
+      <mat-form-field class="w-full">
+        <mat-label>Enter a date range</mat-label>
+        <mat-date-range-input [formGroup]="dateRange" [rangePicker]="picker">
+          <input matStartDate formControlName="start" placeholder="Start date" #dateRangeStart>
+          <input matEndDate formControlName="end" placeholder="End date" #dateRangeEnd
+            (dateChange)="onDateRangeChange()">
+        </mat-date-range-input>
+        <mat-label> (MM/DD/YYYY - MM/DD/YYYY) </mat-label>
+        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+        <mat-date-range-picker #picker></mat-date-range-picker>
+      </mat-form-field>
+
+      <button class="fuse-mat-button" mat-flat-button [color]="'primary'" (click)="searchSMS()">
+        <span>
+          Search
+        </span>
+        <!-- <mat-progress-spinner *ngIf="signInForm.disabled" [diameter]="24"
+                  [mode]="'indeterminate'"></mat-progress-spinner> -->
+      </button>
+
+      <button class="fuse-mat-button bg-primary-200" mat-flat-button (click)="resetFilter()">Reset</button>
+      <button class="fuse-mat-button w-80 bg-accent-300" mat-flat-button>Export to Excel</button>
+    </div>
+    <div>
+      <table mat-table [dataSource]="dataSource">
+
+        <!--- Note that these columns can be defined in any order.
+                    The actual rendered columns are set as a property on the row definition" -->
+
+
+        <ng-container matColumnDef="ToAddress">
+          <th mat-header-cell *matHeaderCellDef> ToAddress </th>
+          <td mat-cell *matCellDef="let element"> {{element.ToAddress}} </td>
+        </ng-container>
+
+
+        <ng-container matColumnDef="Body">
+          <th mat-header-cell *matHeaderCellDef> Body </th>
+          <td mat-cell *matCellDef="let element"> {{element.Body}} </td>
+        </ng-container>
+
+
+        <ng-container matColumnDef="StatusID">
+          <th mat-header-cell *matHeaderCellDef> StatusID </th>
+          <td mat-cell *matCellDef="let element"> {{element.StatusID}} </td>
+        </ng-container>
+
+
+        <ng-container matColumnDef="senttime">
+          <th mat-header-cell *matHeaderCellDef> senttime </th>
+          <td mat-cell *matCellDef="let element"> {{element.senttime}} </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+      <mat-paginator [length]="100" [pageSize]="5" [pageSizeOptions]="[5, 10, 25, 100]" aria-label="Select page">
+      </mat-paginator>
+
+    </div>
+  </div>
+</div>

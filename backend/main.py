@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from typing import Annotated, Union
 from datetime import datetime, timedelta, timezone
@@ -54,6 +55,15 @@ fake_users_db = {
 }
 
 app = FastAPI()
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -279,8 +289,12 @@ async def read_users_me(
 
 @app.get("/")
 async def hello_world(token: Annotated[str, Depends(oauth2_scheme)]):
-    print(token)
     return {"message": "Hello World"}
+
+
+@app.get("/sms-list")
+async def get_all_sms():
+    return {"message": "All the SMS"}
 
 
 @app.get("/get_all_databases_cached")
