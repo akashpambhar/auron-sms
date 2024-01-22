@@ -8,6 +8,7 @@ import { ExampleComponent } from './modules/admin/example/example.component';
 import { LandingHomeComponent } from './modules/landing/home/home.component';
 import { AuthSignUpComponent } from './modules/auth/sign-up/sign-up.component';
 import { SmsListComponent } from './modules/admin/sms-list/sms-list.component';
+import { AdminDashboardComponent } from './modules/admin/admin-dashboard/admin-dashboard.component';
 
 // @formatter:off
 /* eslint-disable max-len */
@@ -108,7 +109,8 @@ export const appRoutes: Route[] = [
     // },
     children: [
       // { path: 'example', loadChildren: () => import('app/modules/admin/example/example.routes') }
-      { path: 'sms-list', component: SmsListComponent }
+      { path: 'sms-list', component: SmsListComponent },
+      { path: 'admin-dashboard', component: AdminDashboardComponent }
 
     ]
   }

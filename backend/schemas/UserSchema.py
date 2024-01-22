@@ -19,6 +19,10 @@ class User(UserBase):
 class UserCreate(UserBase):
     password: str
 
-
 class UserInDB(User):
+    password: str
+
+class UserSignUp(BaseModel):
+    username: str
+    email: str
     password: str

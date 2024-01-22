@@ -1,0 +1,62 @@
+<div class="flex flex-col flex-auto min-w-0">
+
+  <!-- Main -->
+  <div class="flex-auto p-6 sm:p-10">
+      
+      <div class="filter-container">
+          <mat-form-field class="w-full">
+              <mat-label>Search by Username</mat-label>
+              <input matInput [(ngModel)]="searchTerm" type="text" (keyup)="searchSMS()">
+          </mat-form-field>
+
+          <button class="fuse-mat-button" mat-flat-button [color]="'primary'" (click)="openDialog()">
+              <span>
+                  Add User
+              </span>
+              <!-- <mat-progress-spinner *ngIf="signInForm.disabled" [diameter]="24"
+                  [mode]="'indeterminate'"></mat-progress-spinner> -->
+          </button>
+      </div>
+      <div>
+          <table mat-table [dataSource]="dataSource">
+
+              <!--- Note that these columns can be defined in any order.
+                    The actual rendered columns are set as a property on the row definition" -->
+
+              <ng-container matColumnDef="user_id">
+                  <th mat-header-cell *matHeaderCellDef> UserID </th>
+                  <td mat-cell *matCellDef="let element"> {{element.user_id}} </td>
+              </ng-container>
+
+              <ng-container matColumnDef="username">
+                  <th mat-header-cell *matHeaderCellDef> Username </th>
+                  <td mat-cell *matCellDef="let element"> {{element.username}} </td>
+              </ng-container>
+
+
+              <ng-container matColumnDef="email">
+                  <th mat-header-cell *matHeaderCellDef> Email </th>
+                  <td mat-cell *matCellDef="let element"> {{element.email}} </td>
+              </ng-container>
+
+
+              <ng-container matColumnDef="disabled">
+                  <th mat-header-cell *matHeaderCellDef> Disabled </th>
+                  <td mat-cell *matCellDef="let element"> {{element.disabled}} </td>
+              </ng-container>
+
+
+              <!-- <ng-container matColumnDef="senttime">
+                  <th mat-header-cell *matHeaderCellDef> senttime </th>
+                  <td mat-cell *matCellDef="let element"> {{element.senttime}} </td>
+              </ng-container> -->
+
+              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+          </table>
+          <mat-paginator [length]="100" [pageSize]="5" [pageSizeOptions]="[5, 10, 25, 100]" aria-label="Select page">
+          </mat-paginator>
+
+      </div>
+  </div>
+</div>

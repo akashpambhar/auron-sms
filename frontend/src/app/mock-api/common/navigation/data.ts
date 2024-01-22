@@ -3,12 +3,19 @@ import { FuseNavigationItem } from '@fuse/components/navigation';
 
 export const defaultNavigation: FuseNavigationItem[] = [
   {
-    id: 'sms-list',
+    id   : 'sms-list',
     title: 'SMS List',
-    type: 'basic',
-    icon: 'heroicons_outline:chart-pie',
-    link: '/sms-list'
-  }
+    type : 'basic',
+    icon : 'heroicons_outline:table-cells',
+    link : '/sms-list'
+},
+{
+    id   : 'admin-dashboard',
+    title: 'Admin dasboard',
+    type : 'basic',
+    icon : 'heroicons_outline:computer-desktop',
+    link : '/admin-dashboard'
+}
 ];
 export const compactNavigation: FuseNavigationItem[] = [
   {
