@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatTableModule } from '@angular/material/table';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatInputModule } from '@angular/material/input';
@@ -40,7 +40,7 @@ const ELEMENT_DATA: PeriodicElement[] = [
 })
 export class SmsListComponent implements OnInit {
   displayedColumns: string[] = ['ToAddress', 'Body', 'StatusID', 'senttime'];
-  dataSource = ELEMENT_DATA;
+  smsList = new MatTableDataSource<any>();
 
   searchTerm = ''
 
@@ -52,12 +52,10 @@ export class SmsListComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private smsService: SmsService
-  ) {
-  }
+  ) { }
+
   ngOnInit(): void {
-    // this.smsService.getAllSMS().subscribe((data => {
-    //   console.log(data);
-    // }))
+    this.loadAllSMSByMobileNumber('123456789')
   }
 
   onDateRangeChange() {
@@ -80,10 +78,17 @@ export class SmsListComponent implements OnInit {
     // }
     console.log(this.searchTerm);
     console.log(this.dateRange.getRawValue());
+    this.loadAllSMSByMobileNumber(this.searchTerm);
   }
 
   resetFilter() {
     this.searchTerm = '';
     this.dateRange.reset();
+  }
+
+  loadAllSMSByMobileNumber(mobileNumber: string) {
+    this.smsService.getAllSMSByMobileNumber(mobileNumber).subscribe((data => {
+      this.smsList = data;
+    }))
   }
 }

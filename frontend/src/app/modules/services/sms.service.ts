@@ -8,11 +8,11 @@ import { Observable } from 'rxjs';
 export class SmsService {
 
   // private url = `${this.configService.getEnvConfig().API_URL}/api/sms`;
-  private url = 'http://localhost:8000';
+  private url = 'http://localhost:8000/sms';
 
   constructor(private http: HttpClient) { }
 
-  getAllSMS(): Observable<any> {
-    return this.http.get<any>(`${this.url}/sms-list`);
+  getAllSMSByMobileNumber(mobileNumber: string): Observable<any> {
+    return this.http.get<any>(`${this.url}/phone/${mobileNumber}`);
   }
 }
