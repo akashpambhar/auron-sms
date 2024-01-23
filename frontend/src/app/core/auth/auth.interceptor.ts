@@ -43,7 +43,7 @@ export const authInterceptor = (req: HttpRequest<unknown>, next: HttpHandlerFn):
                 authService.signOut();
 
                 // Reload the app
-                location.reload();
+                // location.reload();
             }
 
             return throwError(error);

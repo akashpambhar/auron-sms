@@ -82,19 +82,19 @@ export class ClassyLayoutComponent implements OnInit, OnDestroy {
     // ];
 
     // Subscribe to the user service
-    this._userService.user$
-      .pipe((takeUntil(this._unsubscribeAll)))
-      .subscribe((user: User) => {
-        this.user = user;
-      });
+    // this._userService.user$
+    //   .pipe((takeUntil(this._unsubscribeAll)))
+    //   .subscribe((user: User) => {
+    //     this.user = user;
+    //   });
 
     // Subscribe to media changes
-    this._fuseMediaWatcherService.onMediaChange$
-      .pipe(takeUntil(this._unsubscribeAll))
-      .subscribe(({ matchingAliases }) => {
-        // Check if the screen is small
-        this.isScreenSmall = !matchingAliases.includes('md');
-      });
+    // this._fuseMediaWatcherService.onMediaChange$
+    //   .pipe(takeUntil(this._unsubscribeAll))
+    //   .subscribe(({ matchingAliases }) => {
+    //     // Check if the screen is small
+    //     this.isScreenSmall = !matchingAliases.includes('md');
+    //   });
   }
 
   /**

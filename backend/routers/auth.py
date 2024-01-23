@@ -20,7 +20,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
 def get_auth_scheme():
-    return OAuth2PasswordBearer(tokenUrl="/auth/token")
+    return OAuth2PasswordBearer(tokenUrl="/auth")
 
 
 oauth2_scheme = get_auth_scheme()
@@ -35,12 +35,14 @@ def get_db():
         db.close()
 
 
-@router.post("/token")
+@router.post("/signin")
 async def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    user_signin: UserSchema.UserSignIn,
     db: Annotated[Session, Depends(get_db)],
 ) -> TokenSchema.Token:
-    user = authenticate_user(form_data.username, form_data.password, db)
+    print("---------------")
+    print(user_signin)
+    user = authenticate_user(user_signin.username, user_signin.password, db)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

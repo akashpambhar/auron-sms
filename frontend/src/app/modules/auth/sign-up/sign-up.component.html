@@ -26,10 +26,10 @@
 
         <!-- Name field -->
         <mat-form-field class="w-full">
-          <mat-label>Full name</mat-label>
-          <input id="name" matInput [formControlName]="'name'">
-          <mat-error *ngIf="signUpForm.get('name').hasError('required')">
-            Full name is required
+          <mat-label>Username</mat-label>
+          <input id="username" matInput [formControlName]="'username'">
+          <mat-error *ngIf="signUpForm.get('username').hasError('required')">
+            Username is required
           </mat-error>
         </mat-form-field>
 
@@ -61,24 +61,6 @@
             Password is required
           </mat-error>
         </mat-form-field>
-
-        <!-- Company field -->
-        <mat-form-field class="w-full">
-          <mat-label>Company</mat-label>
-          <input id="company-confirm" matInput [formControlName]="'company'">
-        </mat-form-field>
-
-        <!-- ToS and PP -->
-        <div class="inline-flex items-end w-full mt-1.5">
-          <mat-checkbox class="-ml-2" [color]="'primary'" [formControlName]="'agreements'">
-            <span>I agree with</span>
-            <a class="ml-1 text-primary-500 hover:underline" [routerLink]="['./']">Terms
-            </a>
-            <span>and</span>
-            <a class="ml-1 text-primary-500 hover:underline" [routerLink]="['./']">Privacy Policy
-            </a>
-          </mat-checkbox>
-        </div>
 
         <!-- Submit button -->
         <button class="fuse-mat-button-large w-full mt-6" mat-flat-button [color]="'primary'"

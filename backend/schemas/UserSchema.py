@@ -22,7 +22,9 @@ class UserCreate(UserBase):
 class UserInDB(User):
     password: str
 
-class UserSignUp(BaseModel):
+class UserSignIn(BaseModel):
     username: str
-    email: str
     password: str
+
+class UserSignUp(UserSignIn):
+    email: str
