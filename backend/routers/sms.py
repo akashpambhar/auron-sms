@@ -35,7 +35,7 @@ async def get_all_sms_by_phone_number(mobile_number: str, db: Session = Depends(
                     StatusID int
                 )
 
-                SELECT @command = 'IF ''?'' LIKE ''au%'' OR ''?'' LIKE ''ar%'' 
+                SELECT @command = 'IF (''?'' LIKE ''au%'' OR ''?'' LIKE ''ar%'') AND ''?'' NOT LIKE ''auron_sms''
                 BEGIN 
                     USE ? 
                     DECLARE @table_name varchar(MAX)

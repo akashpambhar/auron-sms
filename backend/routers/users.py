@@ -5,8 +5,8 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from schemas import UserSchema
-from models import User
-from sqlalchemy import select
+from models import User, Role
+from sqlalchemy import select, join, text
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -26,9 +26,60 @@ def get_password_hash(password):
 
 @router.get("/")
 async def get_users(db: Annotated[Session, Depends(get_db)]):
-    results = db.execute(select(User.User)).fetchall()
-    users = [result[0] for result in results]
+
+    join_condition = User.User.role_id == Role.Role.role_id
+    query = select(join(User.User, Role.Role, join_condition))
+
+    results = db.execute(query).fetchall()
+
+    users = [{
+        "user_id": result[0],
+        "username": result[1],
+        "email": result[3],
+        "disabled": result[4],
+        "role_id": result[5],
+        "role_name": result[7]
+    } for result in results]
+
     return users
+
+@router.get("/{user_id}")
+async def get_user_by_user_id(user_id:str, db: Annotated[Session, Depends(get_db)]):
+    existing_user = db.execute(select(User.User).where(User.User.user_id == user_id)).first()
+
+    if existing_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User not found",
+        )
+
+    return existing_user[0]
+
+@router.get("/search/{username}")
+async def get_user_by_user_username(username:str, db: Annotated[Session, Depends(get_db)]):
+    
+    native_sql_query = text(f'''
+        SELECT * 
+        FROM [user]
+        JOIN role ON [user].role_id = role.role_id
+        WHERE [user].username LIKE '%''' + username + '''%\'''')
+
+    results = db.execute(native_sql_query).fetchall()
+
+    users = []
+
+    if results:
+        users = [{
+            "user_id": result[0],
+            "username": result[1],
+            "email": result[3],
+            "disabled": result[4],
+            "role_id": result[5],
+            "role_name": result[7]
+        } for result in results]
+    
+    return users
+
 
 @router.post("/")
 async def add_user(
@@ -64,21 +115,22 @@ async def add_user(
 
 @router.put("/")
 async def edit_user(user_edit: UserSchema.UserInDB, db: Annotated[Session, Depends(get_db)]):
-    with SessionLocal() as session:
-        db_user = session.get(User, user_edit.user_id)
-        
-        if not db_user:
-            raise HTTPException(status_code=404, detail="user not found")
+    db_user = db.execute(select(User.User).where(User.User.user_id == user_edit.user_id)).first()
     
-        temp_user = User.User(**user_edit.model_dump())
+    if not db_user:
+        raise HTTPException(status_code=404, detail="user not found")
 
-        for key, value in temp_user.items():
-            setattr(db_user, key, value)
+    db_user[0].username = user_edit.username
+    db_user[0].email = user_edit.email
+    db_user[0].disabled = user_edit.disabled
+    db_user[0].role_id = user_edit.role_id
+    if user_edit.password != "" :
+        db_user[0].password = user_edit.password
 
-        session.add(db_user)
-        session.commit()
-        session.refresh(db_user)
-        return db_user
+    db.add(db_user[0])
+    db.commit()
+    db.refresh(db_user[0])
+    return "User updated successfully"
    
 
 # @app.patch("/heroes/{hero_id}", response_model=HeroRead)

@@ -1,6 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatTableModule } from '@angular/material/table';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatInputModule } from '@angular/material/input';
@@ -11,6 +11,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatRadioModule } from '@angular/material/radio';
 import { UserUpdateComponent } from '../user-update/user-update.component';
 import { MatDialog } from '@angular/material/dialog';
+import { UserService } from 'app/modules/services/user.service';
 
 export interface PeriodicElement {
   user_id: string;
@@ -40,55 +41,58 @@ const ELEMENT_DATA: PeriodicElement[] = [
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.scss'
 })
-export class AdminDashboardComponent {
-  displayedColumns: string[] = ['user_id', 'username', 'email', 'disabled'];
-  dataSource = ELEMENT_DATA;
+export class AdminDashboardComponent implements OnInit {
+  displayedColumns: string[] = ['username', 'email', 'disabled', 'role_name', 'actions'];
+  UserList = new MatTableDataSource<any>();
 
   searchTerm = ''
-
-  userForm: FormGroup;
+  isLoading : boolean
 
   constructor(
     private fb: FormBuilder,
     public dialog: MatDialog,
+    private userService: UserService
   ) {
-    this.userForm = this.fb.group({
-      username: ['', Validators.required],
-      password: [''],
-      email: ['', [Validators.required, Validators.email]],
-      disabled: [false, Validators.required],
-      role_id: ['3', Validators.required]
+  }
+  ngOnInit(): void {
+    this.loadUsers()
+  }
+
+  loadUsers() {
+    this.isLoading = true;
+    this.userService.getAllUser().subscribe((data) => {
+      this.UserList = data
+      this.isLoading = false;
     })
   }
 
   searchSMS() {
-    // let startDate = moment(this.dateRange.getRawValue()['start']);
-    // let endDate = moment(this.dateRange.getRawValue()['end']);
-
-    // if (!startDate.isValid()) {
-    //   startDate = null;
-    // } else {
-    //   startDate = startDate.format("YYYY-MM-DD");
-    // }
-
-    // if (!endDate.isValid()) {
-    //   endDate = null;
-    // } else {
-    //   endDate = endDate.format("YYYY-MM-DD");
-    // }
-    console.log(this.searchTerm);
+    if (this.searchTerm !== "") {
+      this.isLoading = true;
+      this.userService.getByUsername(this.searchTerm).subscribe((user: any) => {
+        this.UserList = user
+        this.isLoading = false;
+      })
+    }
+    else{
+      this.loadUsers()
+    }
   }
 
   resetFilter() {
     this.searchTerm = '';
   }
 
-  submit(){
+  submit() {
 
   }
 
-  clearUserForm(){
+  clearUserForm() {
 
+  }
+
+  updateUser(userId: any) {
+    this.openDialog(userId)
   }
 
   openDialog(userId?: number) {
@@ -98,10 +102,10 @@ export class AdminDashboardComponent {
       }
     })
 
-    // dialogRef.afterClosed().subscribe((res: any) => {
-    //   if (res == true) {
-    //     this.loadUser()
-    //   }
-    // })
+    dialogRef.afterClosed().subscribe((res: any) => {
+      if (res == true) {
+        this.loadUsers()
+      }
+    })
   }
 }

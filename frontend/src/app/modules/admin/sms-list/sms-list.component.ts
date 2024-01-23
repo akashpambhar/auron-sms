@@ -55,9 +55,9 @@ export class SmsListComponent implements OnInit {
   ) {
   }
   ngOnInit(): void {
-    this.smsService.getAllSMS().subscribe((data => {
-      console.log(data);
-    }))
+    // this.smsService.getAllSMS().subscribe((data => {
+    //   console.log(data);
+    // }))
   }
 
   onDateRangeChange() {
