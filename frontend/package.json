@@ -36,6 +36,7 @@
         "zone.js": "0.14.2"
     },
     "devDependencies": {
+        "@angular-builders/custom-webpack": "^17.0.0",
         "@angular-devkit/build-angular": "17.0.1",
         "@angular/cli": "17.0.1",
         "@angular/compiler-cli": "17.0.3",
@@ -47,8 +48,10 @@
         "@types/lodash": "4.14.201",
         "@types/lodash-es": "4.17.11",
         "@types/luxon": "3.3.4",
+        "@types/node": "^20.11.5",
         "autoprefixer": "10.4.16",
         "chroma-js": "2.4.2",
+        "dotenv-webpack": "^8.0.1",
         "jasmine-core": "5.1.1",
         "karma": "6.4.2",
         "karma-chrome-launcher": "3.2.0",
