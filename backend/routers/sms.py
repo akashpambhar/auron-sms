@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from database import SessionLocal
+from utils import PaginationParams
 
 router = APIRouter(prefix="/sms", tags=["sms"])
 
@@ -15,7 +16,11 @@ def get_db():
 
 
 @router.get("/")
-async def get_all_sms(db: Session = Depends(get_db)):
+async def get_all_sms(
+    pagination: PaginationParams.PaginationParams = Depends(),
+    db: Session = Depends(get_db),
+):
+    print(pagination)
     try:
         messages = []
 
@@ -64,7 +69,10 @@ async def get_all_sms(db: Session = Depends(get_db)):
                 EXEC sp_MSforeachdb @command
  
                 SELECT * FROM #TempResults
-
+                ORDER BY """ + pagination.sort_by + " " + pagination.sort_order + """
+                OFFSET """ + str((pagination.page - 1) * pagination.page_size) + """ ROWS
+                FETCH NEXT """ + str(pagination.page_size) + """ ROWS ONLY
+                 
                 DROP TABLE #TempResults
                 """
             )
@@ -82,7 +90,6 @@ async def get_all_sms(db: Session = Depends(get_db)):
                 messages = messages + cureent_msg
         except Exception as e:
             print(e)
-            
 
         return messages
     except Exception as e:
@@ -92,7 +99,9 @@ async def get_all_sms(db: Session = Depends(get_db)):
 
 
 @router.get("/phone/{mobile_number}")
-async def get_all_sms_by_phone_number(mobile_number: str, db: Session = Depends(get_db)):
+async def get_all_sms_by_phone_number(
+    mobile_number: str, db: Session = Depends(get_db)
+):
     print(mobile_number)
     try:
         messages = []
