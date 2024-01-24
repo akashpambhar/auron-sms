@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from database import SessionLocal
 from utils import PaginationParams
+from typing import Optional
 
 router = APIRouter(prefix="/sms", tags=["sms"])
 
@@ -69,9 +70,17 @@ async def get_all_sms(
                 EXEC sp_MSforeachdb @command
  
                 SELECT * FROM #TempResults
-                ORDER BY """ + pagination.sort_by + " " + pagination.sort_order + """
-                OFFSET """ + str((pagination.page - 1) * pagination.page_size) + """ ROWS
-                FETCH NEXT """ + str(pagination.page_size) + """ ROWS ONLY
+                ORDER BY """
+                + pagination.sort_by
+                + " "
+                + pagination.sort_order
+                + """
+                OFFSET """
+                + str((pagination.page - 1) * pagination.page_size)
+                + """ ROWS
+                FETCH NEXT """
+                + str(pagination.page_size)
+                + """ ROWS ONLY
                  
                 DROP TABLE #TempResults
                 """
@@ -200,47 +209,125 @@ async def get_all_sms_by_phone_number(
         )
 
 
-# select ToAddress, Body, StatusID
-# from @dbname.dbo.@table_name a, @dbname.dbo.@table_name_Sms b
-# where a.id=b.MessageID and  ToAddress like :mobile_number;
+@router.get("/filter-test")
+async def perform_filter_test(
+    toAddress: Optional[str] = Query(None),
+    pagination: PaginationParams.PaginationParams = Depends(),
+    db: Session = Depends(get_db),
+):
+    try:
+        messages = []
+        try:
+            query = text(
+                """
+                SELECT * FROM [user]
+                where (:username IS NULL OR username like :username)
+                """
+            )
+            if toAddress is not None:
+                toAddress = f"%{toAddress}%"
+            results = db.execute(query, {"username": toAddress}).fetchall()
+            cureent_msg = [
+                {
+                    "ToAddress": result[0],
+                    # "senttime": result[1],
+                    "Body": result[1],
+                    "StatusID": result[2],
+                }
+                for result in results
+            ]
+            if cureent_msg is not None:
+                messages = messages + cureent_msg
+        except Exception as e:
+            print(e)
 
-# DECLARE @dbname varchar(MAX) = '';
-# DECLARE @table_name varchar(MAX) = '';
-# DECLARE @rn INT = 1;
+        return messages
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error executing SQL query: {str(e)}"
+        )
 
-# WHILE @dbname IS NOT NULL
-# BEGIN
-#     SET @dbname = (SELECT name FROM (SELECT name, ROW_NUMBER() OVER (ORDER BY name) rn
-#         FROM sys.databases WHERE ((name LIKE 'au%' OR name LIKE 'ar%') AND name <> 'auintegration')) t WHERE rn = @rn);
 
-#     IF @dbname <> '' AND @dbname IS NOT NULL
-#         BEGIN
-#             IF (LOWER(LEFT(@dbname, 2)) = 'ar')
-#                 SET @table_name = 'ArchMessages'
-#             ELSE
-#                 SET @table_name = 'Messages'
+@router.get("/search")
+async def search(
+    mobileNumber: Optional[str] = Query(None),
+    startDate: Optional[str] = Query(None),
+    endDate: Optional[str] = Query(None),
+    pagination: PaginationParams.PaginationParams = Depends(),
+    db: Session = Depends(get_db),
+):
+    try:
+        messages = []
+        try:
+            query = text(
+                """
+                DECLARE @command varchar(MAX)
+                CREATE TABLE #TempResults (
+                    ToAddress varchar(MAX),
+                    Body varchar(MAX),
+                    StatusID int
+                )
 
-#             DECLARE @SQL NVARCHAR(MAX);
-#             SET @SQL = N'USE ' + QUOTENAME(@dbname);
-#             PRINT(@SQL);
-#             EXECUTE(@SQL);
+                SELECT @command = 'IF (''?'' LIKE ''au%'' OR ''?'' LIKE ''ar%'') AND ''?'' NOT LIKE ''auron_sms''
+                BEGIN 
+                    USE ? 
+                    DECLARE @table_name varchar(MAX)
+                    
+                    IF (LOWER(LEFT(''?'', 2)) = ''ar'')
+                        SET @table_name = ''ArchMessages''
+                    ELSE
+                        SET @table_name = ''Messages''
 
-#             IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = QUOTENAME(@table_name) AND COLUMN_NAME = 'OriginalID')
-#                 BEGIN
-#                     DECLARE @sql_query1 NVARCHAR(MAX);
-#                     SELECT @sql_query1 = 'select ToAddress, Body, StatusID ' +
-#                         'from ' + QUOTENAME(@dbname) + '.dbo.' + QUOTENAME(@table_name) + ' a, ' + QUOTENAME(@dbname) + '.dbo.' + QUOTENAME(@table_name + '_Sms') + ' b ' +
-#                         'where a.OriginalID=b.MessageID and  ToAddress like 123456789'
-#                     EXEC sp_executesql @sql_query1;
-#                 END
-#             ELSE
-#                 BEGIN
-#                     DECLARE @sql_query2 NVARCHAR(MAX);
-#                     SELECT @sql_query2 = 'select ToAddress, Body, StatusID ' +
-#                         'from ' + QUOTENAME(@dbname) + '.dbo.' + QUOTENAME(@table_name) + ' a, ' + QUOTENAME(@dbname) + '.dbo.' + QUOTENAME(@table_name + '_Sms') + ' b ' +
-#                         'where a.OriginalID=b.MessageID and  ToAddress like 123456789'
-#                     EXEC sp_executesql @sql_query2;
-#                 END
-#         END
-#     SET @rn = @rn + 1;
-# END;
+                    IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @table_name AND COLUMN_NAME = ''OriginalID'')
+                        BEGIN
+                            DECLARE @sql_query1 NVARCHAR(MAX)
+                            SELECT @sql_query1 = ''INSERT INTO #TempResults (ToAddress, Body, StatusID) '' +
+                                ''select ToAddress, Body, StatusID '' +
+                                ''from '' + @table_name + '' a '' +
+                                ''inner join '' + @table_name + ''_Sms '' + '' b '' +
+                                ''on a.OriginalID=b.MessageID where '' + 
+                                ''(':mobileNumber' IS NULL OR ToAddress like ':mobileNumber') ''
+                            EXEC sp_executesql @sql_query1
+                        END
+                    ELSE
+                        BEGIN
+                            DECLARE @sql_query2 NVARCHAR(MAX)
+                            SELECT @sql_query2 = ''INSERT INTO #TempResults (ToAddress, Body, StatusID) '' +
+                                ''select ToAddress, Body, StatusID '' +
+                                ''from '' + @table_name + '' a '' +
+                                ''inner join '' + @table_name + ''_Sms'' + '' b '' +
+                                ''on a.id=b.MessageID where '' + 
+                                ''(':mobileNumber' IS NULL OR ToAddress like ':mobileNumber') ''
+                            EXEC sp_executesql @sql_query2
+                        END
+                END'
+
+                EXEC sp_MSforeachdb @command
+ 
+                SELECT * FROM #TempResults
+
+                DROP TABLE #TempResults
+                """
+            )
+            if mobileNumber is not None:
+                mobileNumber = f"%{mobileNumber}%"
+            results = db.execute(query, {"mobileNumber": mobileNumber}).fetchall()
+            cureent_msg = [
+                {
+                    "ToAddress": result[0],
+                    # "senttime": result[1],
+                    "Body": result[1],
+                    "StatusID": result[2],
+                }
+                for result in results
+            ]
+            if cureent_msg is not None:
+                messages = messages + cureent_msg
+        except Exception as e:
+            print(e)
+
+        return messages
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error executing SQL query: {str(e)}"
+        )
