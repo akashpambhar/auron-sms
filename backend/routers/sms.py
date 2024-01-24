@@ -15,8 +15,80 @@ def get_db():
 
 
 @router.get("/")
-async def get_all_sms():
-    return {"message": "All the SMS"}
+async def get_all_sms(db: Session = Depends(get_db)):
+    try:
+        messages = []
+
+        try:
+            query = text(
+                """
+                DECLARE @command varchar(MAX)
+                CREATE TABLE #TempResults (
+                    ToAddress varchar(MAX),
+                    Body varchar(MAX),
+                    StatusID int
+                )
+
+                SELECT @command = 'IF (''?'' LIKE ''au%'' OR ''?'' LIKE ''ar%'') AND ''?'' NOT LIKE ''auron_sms''
+                BEGIN 
+                    USE ? 
+                    DECLARE @table_name varchar(MAX)
+                    
+                    IF (LOWER(LEFT(''?'', 2)) = ''ar'')
+                        SET @table_name = ''ArchMessages''
+                    ELSE
+                        SET @table_name = ''Messages''
+
+                    IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @table_name AND COLUMN_NAME = ''OriginalID'')
+                        BEGIN
+                            DECLARE @sql_query1 NVARCHAR(MAX)
+                            SELECT @sql_query1 = ''INSERT INTO #TempResults (ToAddress, Body, StatusID) '' +
+                                ''select ToAddress, Body, StatusID '' +
+                                ''from '' + @table_name + '' a '' +
+                                ''inner join '' + @table_name + ''_Sms '' + '' b '' +
+                                ''on a.OriginalID=b.MessageID ''
+                            EXEC sp_executesql @sql_query1
+                        END
+                    ELSE
+                        BEGIN
+                            DECLARE @sql_query2 NVARCHAR(MAX)
+                            SELECT @sql_query2 = ''INSERT INTO #TempResults (ToAddress, Body, StatusID) '' +
+                                ''select ToAddress, Body, StatusID '' +
+                                ''from '' + @table_name + '' a '' +
+                                ''inner join '' + @table_name + ''_Sms'' + '' b '' +
+                                ''on a.id=b.MessageID ''
+                            EXEC sp_executesql @sql_query2
+                        END
+                END'
+
+                EXEC sp_MSforeachdb @command
+ 
+                SELECT * FROM #TempResults
+
+                DROP TABLE #TempResults
+                """
+            )
+            results = db.execute(query).fetchall()
+            cureent_msg = [
+                {
+                    "ToAddress": result[0],
+                    # "senttime": result[1],
+                    "Body": result[1],
+                    "StatusID": result[2],
+                }
+                for result in results
+            ]
+            if cureent_msg is not None:
+                messages = messages + cureent_msg
+        except Exception as e:
+            print(e)
+            
+
+        return messages
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error executing SQL query: {str(e)}"
+        )
 
 
 @router.get("/phone/{mobile_number}")
@@ -50,8 +122,9 @@ async def get_all_sms_by_phone_number(mobile_number: str, db: Session = Depends(
                             DECLARE @sql_query1 NVARCHAR(MAX)
                             SELECT @sql_query1 = ''INSERT INTO #TempResults (ToAddress, Body, StatusID) '' +
                                 ''select ToAddress, Body, StatusID '' +
-                                ''from '' + @table_name + '' a, '' + @table_name + ''_Sms'' + '' b '' +
-                                ''where a.OriginalID=b.MessageID AND ToAddress = """
+                                ''from '' + @table_name + '' a '' +
+                                ''inner join '' + @table_name + ''_Sms '' + '' b '' +
+                                ''on a.OriginalID=b.MessageID where ToAddress = """
                 + mobile_number
                 + """ ''
                             EXEC sp_executesql @sql_query1
@@ -61,8 +134,9 @@ async def get_all_sms_by_phone_number(mobile_number: str, db: Session = Depends(
                             DECLARE @sql_query2 NVARCHAR(MAX)
                             SELECT @sql_query2 = ''INSERT INTO #TempResults (ToAddress, Body, StatusID) '' +
                                 ''select ToAddress, Body, StatusID '' +
-                                ''from '' + @table_name + '' a, '' + @table_name + ''_Sms'' + '' b '' +
-                                ''where a.id=b.MessageID AND ToAddress = """
+                                ''from '' + @table_name + '' a '' +
+                                ''inner join '' + @table_name + ''_Sms'' + '' b '' +
+                                ''on a.id=b.MessageID where ToAddress = """
                 + mobile_number
                 + """ ''
                             EXEC sp_executesql @sql_query2

@@ -13,7 +13,7 @@ RUN npm run ng build --output-path=/app/dist/frontend --configuration=$configura
 
 FROM nginx:latest AS ngi
 
-COPY --from=build /app/dist/frontend/browser /usr/share/nginx/html
+COPY --from=build /app/dist/frontend /usr/share/nginx/html
 COPY frontend/nginx.conf  /etc/nginx/conf.d/default.conf.template
 COPY frontend/docker-entrypoint.sh /
 ENTRYPOINT ["/docker-entrypoint.sh"]
