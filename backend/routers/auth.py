@@ -40,8 +40,6 @@ async def login_for_access_token(
     user_signin: UserSchema.UserSignIn,
     db: Annotated[Session, Depends(get_db)],
 ) -> TokenSchema.Token:
-    print("---------------")
-    print(user_signin)
     user = authenticate_user(user_signin.username, user_signin.password, db)
     if not user:
         raise HTTPException(
@@ -51,7 +49,7 @@ async def login_for_access_token(
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
+        data={"sub": user.username, "role": user.role_id}, expires_delta=access_token_expires
     )
     return TokenSchema.Token(access_token=access_token, token_type="bearer")
 

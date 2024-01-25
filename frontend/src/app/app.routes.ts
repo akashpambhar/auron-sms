@@ -87,6 +87,8 @@ export const appRoutes: Route[] = [
   {
     path: '',
     component: LayoutComponent,
+    canActivate: [NoAuthGuard],
+    canActivateChild: [NoAuthGuard],
     data: {
       layout: 'empty'
     },

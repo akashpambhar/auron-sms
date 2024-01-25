@@ -2,7 +2,9 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { AuthUtils } from 'app/core/auth/auth.utils';
 import { UserService } from 'app/core/user/user.service';
+import { jwtDecode } from 'jwt-decode';
 import { catchError, Observable, of, switchMap, throwError } from 'rxjs';
+import { User } from '../user/user.types';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -61,15 +63,13 @@ export class AuthService {
     return this._httpClient.post('http://localhost:8000/auth/signin', credentials).pipe(
       switchMap((response: any) => {
         // Store the access token in the local storage
-        console.log(response);
-        
         this.accessToken = response.access_token;
 
         // Set the authenticated flag to true
         this._authenticated = true;
 
         // Store the user on the user service
-        // this._userService.user = response.user;
+        this.setUser();
 
         // Return a new observable with the response
         return of(response);
@@ -82,15 +82,7 @@ export class AuthService {
    */
   signInUsingToken(): Observable<any> {
     // Sign in using the token
-    return this._httpClient.post('api/auth/sign-in-with-token', {
-      accessToken: this.accessToken,
-    }).pipe(
-      catchError(() =>
-
-        // Return false
-        of(false),
-      ),
-      switchMap((response: any) => {
+    
         // Replace the access token with the new one if it's available on
         // the response object.
         //
@@ -98,20 +90,20 @@ export class AuthService {
         // in using the token, you should generate a new one on the server
         // side and attach it to the response object. Then the following
         // piece of code can replace the token with the refreshed one.
-        if (response.accessToken) {
-          this.accessToken = response.accessToken;
-        }
+        // if (response.accessToken) {
+        //   this.accessToken = response.accessToken;
+        // }
 
         // Set the authenticated flag to true
         this._authenticated = true;
 
         // Store the user on the user service
-        this._userService.user = response.user;
+        this.setUser();
 
         // Return true
         return of(true);
-      }),
-    );
+    //   }),
+    // );
   }
 
   /**
@@ -167,5 +159,21 @@ export class AuthService {
 
     // If the access token exists, and it didn't expire, sign in using it
     return this.signInUsingToken();
+  }
+
+  setUser() {
+    const token = this.accessToken;
+
+    if (token != "") {
+      const decodedToken: any = jwtDecode(token);
+
+      let user: User = {
+        id: '',
+        username: decodedToken?.sub,
+        role: decodedToken?.role
+      };
+
+      this._userService.user = user;
+    }
   }
 }

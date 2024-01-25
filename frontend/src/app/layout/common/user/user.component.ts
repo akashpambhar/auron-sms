@@ -57,7 +57,6 @@ export class UserComponent implements OnInit, OnDestroy
             .subscribe((user: User) =>
             {
                 this.user = user;
-
                 // Mark for check
                 this._changeDetectorRef.markForCheck();
             });
@@ -71,30 +70,6 @@ export class UserComponent implements OnInit, OnDestroy
         // Unsubscribe from all subscriptions
         this._unsubscribeAll.next(null);
         this._unsubscribeAll.complete();
-    }
-
-    // -----------------------------------------------------------------------------------------------------
-    // @ Public methods
-    // -----------------------------------------------------------------------------------------------------
-
-    /**
-     * Update the user status
-     *
-     * @param status
-     */
-    updateUserStatus(status: string): void
-    {
-        // Return if user is not available
-        if ( !this.user )
-        {
-            return;
-        }
-
-        // Update the user
-        this._userService.update({
-            ...this.user,
-            status,
-        }).subscribe();
     }
 
     /**

@@ -1,23 +1,34 @@
 import { inject } from '@angular/core';
 import { CanActivateChildFn, CanActivateFn, Router } from '@angular/router';
 import { AuthService } from 'app/core/auth/auth.service';
+import { UserService } from 'app/core/user/user.service';
 import { of, switchMap } from 'rxjs';
 
-export const NoAuthGuard: CanActivateFn | CanActivateChildFn = (route, state) =>
-{
+export const NoAuthGuard: CanActivateFn | CanActivateChildFn = (route, state) => {
     const router: Router = inject(Router);
+    const userService: UserService = inject(UserService);
 
     // Check the authentication status
     return inject(AuthService).check().pipe(
-        switchMap((authenticated) =>
-        {
+        switchMap((authenticated) => {
             // If the user is authenticated...
-            if ( authenticated )
-            {
-                return of(router.parseUrl(''));
-            }
+            console.log("NO AUTH GUARD");
 
-            // Allow the access
+            if (authenticated) {
+                console.log("NO AUTH AUTHENTICATED");
+
+                return userService.user$.pipe(switchMap((user: any) => {
+                    console.log(user);
+                    if (user.role === 1) {
+                        return of(router.parseUrl('admin-dashboard'));
+                    } else if (user.role === 2) {
+                        return of(router.parseUrl('sms-list'));
+                    } else if (user.role === 3) {
+                        return of(router.parseUrl('sms-list'));
+                    }
+                }));
+            }
+            
             return of(true);
         }),
     );

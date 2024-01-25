@@ -145,7 +145,7 @@ async def edit_user(
     db_user[0].disabled = user_edit.disabled
     db_user[0].role_id = user_edit.role_id
     if user_edit.password != "":
-        db_user[0].password = user_edit.password
+        db_user[0].password = get_password_hash(user_edit.password)
 
     db.add(db_user[0])
     db.commit()

@@ -59,7 +59,7 @@ export class AuthSignUpComponent implements OnInit {
             next: (response: any) => {
                 console.log(response);
 
-                // this._router.navigateByUrl('/confirmation-required');
+                this._router.navigateByUrl('/sign-in');
             },
             error: (error: any) => {
                 console.log(error);
