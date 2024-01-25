@@ -9,7 +9,7 @@
         <input matInput [(ngModel)]="searchTerm" type="number" placeholder="97112345678">
       </mat-form-field>
 
-      <mat-form-field class="w-full">
+      <!-- <mat-form-field class="w-full">
         <mat-label>Enter a date range</mat-label>
         <mat-date-range-input [formGroup]="dateRange" [rangePicker]="picker">
           <input matStartDate formControlName="start" placeholder="Start date" #dateRangeStart>
@@ -19,7 +19,7 @@
         <mat-label> (MM/DD/YYYY - MM/DD/YYYY) </mat-label>
         <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
         <mat-date-range-picker #picker></mat-date-range-picker>
-      </mat-form-field>
+      </mat-form-field> -->
 
       <button class="fuse-mat-button" mat-flat-button [color]="'primary'" (click)="searchSMS()">
         <span>
@@ -30,7 +30,7 @@
       </button>
 
       <button class="fuse-mat-button bg-primary-200" mat-flat-button (click)="resetFilter()">Reset</button>
-      <button class="fuse-mat-button w-80 bg-accent-300" mat-flat-button>Export to Excel</button>
+      <!-- <button class="fuse-mat-button w-80 bg-accent-300" mat-flat-button>Export to Excel</button> -->
     </div>
     <div>
       <table mat-table [dataSource]="smsList">

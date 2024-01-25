@@ -5,7 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, Router, RouterOutlet } from '@angular/router';
 import { FuseFullscreenComponent } from '@fuse/components/fullscreen';
 import { FuseLoadingBarComponent } from '@fuse/components/loading-bar';
-import { FuseNavigationService, FuseVerticalNavigationComponent } from '@fuse/components/navigation';
+import { FuseNavigationItem, FuseNavigationService, FuseVerticalNavigationComponent } from '@fuse/components/navigation';
 import { FuseMediaWatcherService } from '@fuse/services/media-watcher';
 import { NavigationService } from 'app/core/navigation/navigation.service';
 import { Navigation } from 'app/core/navigation/navigation.types';
@@ -31,6 +31,11 @@ export class ClassyLayoutComponent implements OnInit, OnDestroy {
   navigation: Navigation;
   user: User;
   private _unsubscribeAll: Subject<any> = new Subject<any>();
+  defaultNavigation: FuseNavigationItem[] = []
+  compactNavigation: FuseNavigationItem[] = []
+  futuristicNavigation: FuseNavigationItem[] = []
+  horizontalNavigation: FuseNavigationItem[] = []
+
 
   /**
    * Constructor
@@ -43,6 +48,51 @@ export class ClassyLayoutComponent implements OnInit, OnDestroy {
     private _fuseMediaWatcherService: FuseMediaWatcherService,
     private _fuseNavigationService: FuseNavigationService,
   ) {
+    this.defaultNavigation = [
+      {
+        id: 'admin-dashboard',
+        title: 'Admin dasboard',
+        type: 'basic',
+        icon: 'heroicons_outline:computer-desktop',
+        link: '/admin-dashboard',
+        hidden: () => !(this.user.role == 1)
+      },
+      {
+        id: 'sms-list',
+        title: 'SMS List',
+        type: 'basic',
+        icon: 'heroicons_outline:table-cells',
+        link: '/sms-list',
+        hidden: () => !(this.user.role == 1 || this.user.role == 2 || this.user.role == 3)
+      },
+    ];
+    this.compactNavigation = [
+      {
+        id: 'example',
+        title: 'Example',
+        type: 'basic',
+        icon: 'heroicons_outline:chart-pie',
+        link: '/example'
+      }
+    ];
+    this.futuristicNavigation = [
+      {
+        id: 'example',
+        title: 'Example',
+        type: 'basic',
+        icon: 'heroicons_outline:chart-pie',
+        link: '/example'
+      }
+    ];
+    this.horizontalNavigation = [
+      {
+        id: 'example',
+        title: 'Example',
+        type: 'basic',
+        icon: 'heroicons_outline:chart-pie',
+        link: '/example'
+      }
+    ];
   }
 
   // -----------------------------------------------------------------------------------------------------
@@ -68,7 +118,7 @@ export class ClassyLayoutComponent implements OnInit, OnDestroy {
     this._navigationService.navigation$
       .pipe(takeUntil(this._unsubscribeAll))
       .subscribe((navigation: Navigation) => {
-        this.navigation = navigation;
+        this.navigation = { default: this.defaultNavigation, compact: this.compactNavigation, futuristic: this.futuristicNavigation, horizontal: this.horizontalNavigation };
       });
 
     // this.navigation.default = [
@@ -82,11 +132,11 @@ export class ClassyLayoutComponent implements OnInit, OnDestroy {
     // ];
 
     // Subscribe to the user service
-    // this._userService.user$
-    //   .pipe((takeUntil(this._unsubscribeAll)))
-    //   .subscribe((user: User) => {
-    //     this.user = user;
-    //   });
+    this._userService.user$
+      .pipe((takeUntil(this._unsubscribeAll)))
+      .subscribe((user: User) => {
+        this.user = user;
+      });
 
     // Subscribe to media changes
     // this._fuseMediaWatcherService.onMediaChange$
