@@ -152,5 +152,4 @@ cython_debug/
 #.idea/
 start.bat
 *.sql
-db
 .vscode/settings.json

@@ -10,6 +10,8 @@ services:
       MSSQL_PID: Express
     ports:
       - "1433:1433"
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d/
     networks:
       - docnetwork
 
