@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from database import SessionLocal
 from utils import PaginationParams
 from typing import Optional
+import random
 
 router = APIRouter(prefix="/sms", tags=["sms"])
 
@@ -22,6 +23,9 @@ async def get_all_sms(
     db: Session = Depends(get_db),
 ):
     print(pagination)
+
+    random_number = str(random.randint(1, 10000000))
+
     try:
         messages = {
             "items": [],
@@ -33,7 +37,7 @@ async def get_all_sms(
             """
 DECLARE @command NVARCHAR(MAX)
 
-CREATE TABLE #TempResults_OneDay (
+CREATE TABLE #TempResults_""" + random_number + """ (
     ToAddress NVARCHAR(32),
     Body NVARCHAR(MAX),
     StatusID NVARCHAR(32),
@@ -59,7 +63,7 @@ USE [?]
     IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @table_name AND COLUMN_NAME = ''OriginalID'')
         BEGIN
             SET @sql_query = 
-                ''INSERT INTO #TempResults_OneDay (ToAddress, Body, StatusID, SentTime) '' +
+                ''INSERT INTO #TempResults_""" + random_number + """ (ToAddress, Body, StatusID, SentTime) '' +
                 ''SELECT ToAddress, Body, StatusID, SentTime '' +
                 ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a '' +
                 ''INNER JOIN '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + ''_Sms b '' +
@@ -70,7 +74,7 @@ USE [?]
     ELSE
         BEGIN
             SET @sql_query = 
-                ''INSERT INTO #TempResults_OneDay (ToAddress, Body, StatusID, SentTime) '' +
+                ''INSERT INTO #TempResults_""" + random_number + """ (ToAddress, Body, StatusID, SentTime) '' +
                 ''SELECT ToAddress, Body, StatusID, SentTime '' +
                 ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a '' +
                 ''INNER JOIN '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + ''_Sms b '' +
@@ -83,9 +87,9 @@ END'
 EXEC sp_MSforeachdb @command
 
 DECLARE @TotalCount BIGINT;
-SET @TotalCount = (SELECT COUNT(*) FROM #TempResults_OneDay);
+SET @TotalCount = (SELECT COUNT(*) FROM #TempResults_""" + random_number + """);
 
-SELECT *, @TotalCount As TotalCount FROM #TempResults_OneDay
+SELECT *, @TotalCount As TotalCount FROM #TempResults_""" + random_number + """
 ORDER BY """
 + pagination.sort_by
 + " "
@@ -98,10 +102,14 @@ FETCH NEXT """
 + str(pagination.page_size)
 + """ ROWS ONLY
     
-DROP TABLE #TempResults_OneDay
+DROP TABLE #TempResults_""" + random_number + """
         """
         )
+
+        print(query)
         results = db.execute(query).fetchall()
+
+        print(results)
 
         messages["items"] = [
             {
@@ -129,6 +137,7 @@ async def get_all_sms_by_phone_number(
     db: Session = Depends(get_db)
 ):
     print(mobile_number)
+    random_number = str(random.randint(1, 10000000))
     try:
         messages = {
             "items": [],
@@ -140,7 +149,7 @@ async def get_all_sms_by_phone_number(
             """
 DECLARE @command NVARCHAR(MAX)
 
-CREATE TABLE #TempResults (
+CREATE TABLE #TempResults_""" + random_number + """ (
     ToAddress NVARCHAR(32),
     Body NVARCHAR(MAX),
     StatusID NVARCHAR(32),
@@ -166,7 +175,7 @@ BEGIN
     IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @table_name AND COLUMN_NAME = ''OriginalID'')
         BEGIN
             SET @sql_query = 
-                ''INSERT INTO #TempResults (ToAddress, SentTime, Body, StatusID) '' +
+                ''INSERT INTO #TempResults_""" + random_number + """ (ToAddress, SentTime, Body, StatusID) '' +
                 ''SELECT ToAddress, SentTime, Body, StatusID '' +
                 ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a '' +
                 ''INNER JOIN '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + ''_Sms b '' +
@@ -178,7 +187,7 @@ BEGIN
     ELSE
         BEGIN
             SET @sql_query = 
-                ''INSERT INTO #TempResults (ToAddress, SentTime, Body, StatusID) '' +
+                ''INSERT INTO #TempResults_""" + random_number + """ (ToAddress, SentTime, Body, StatusID) '' +
                 ''SELECT ToAddress, SentTime, Body, StatusID '' +
                 ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a '' +
                 ''INNER JOIN '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + ''_Sms b '' +
@@ -192,9 +201,9 @@ END'
 EXEC sp_MSforeachdb @command
 
 DECLARE @TotalCount BIGINT;
-SET @TotalCount = (SELECT COUNT(*) FROM #TempResults);
+SET @TotalCount = (SELECT COUNT(*) FROM #TempResults_""" + random_number + """);
 
-SELECT *, @TotalCount As TotalCount FROM #TempResults
+SELECT *, @TotalCount As TotalCount FROM #TempResults_""" + random_number + """
 ORDER BY """
 + pagination.sort_by
 + " "
@@ -207,7 +216,7 @@ FETCH NEXT """
 + str(pagination.page_size)
 + """ ROWS ONLY
 
-DROP TABLE #TempResults
+DROP TABLE #TempResults_""" + random_number + """
             """
         )
 

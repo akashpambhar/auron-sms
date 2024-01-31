@@ -5,12 +5,14 @@ import { UserService } from 'app/core/user/user.service';
 import { jwtDecode } from 'jwt-decode';
 import { catchError, Observable, of, switchMap, throwError } from 'rxjs';
 import { User } from '../user/user.types';
+import { ConfigService } from 'app/modules/services/config.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private _authenticated: boolean = false;
   private _httpClient = inject(HttpClient);
   private _userService = inject(UserService);
+  private configService = inject(ConfigService);
 
   // -----------------------------------------------------------------------------------------------------
   // @ Accessors
@@ -60,7 +62,9 @@ export class AuthService {
       return throwError('User is already logged in.');
     }
 
-    return this._httpClient.post('http://localhost:8000/auth/signin', credentials).pipe(
+    let url = `${this.configService.getEnvConfig().API_URL}/auth`;
+
+    return this._httpClient.post(url + '/signin', credentials).pipe(
       switchMap((response: any) => {
         // Store the access token in the local storage
         this.accessToken = response.access_token;
