@@ -25,81 +25,85 @@ async def get_all_sms(
     try:
         messages = []
 
-        try:
-            query = text(
-                """
-                DECLARE @command varchar(MAX)
-                CREATE TABLE #TempResults (
-                    ToAddress varchar(MAX),
-                    Body varchar(MAX),
-                    StatusID int
-                )
+        query = text(
+            """
+DECLARE @command NVARCHAR(MAX)
 
-                SELECT @command = 'IF (''?'' LIKE ''au%'' OR ''?'' LIKE ''ar%'') AND ''?'' NOT LIKE ''auron_sms''
-                BEGIN 
-                    USE ? 
-                    DECLARE @table_name varchar(MAX)
-                    
-                    IF (LOWER(LEFT(''?'', 2)) = ''ar'')
-                        SET @table_name = ''ArchMessages''
-                    ELSE
-                        SET @table_name = ''Messages''
+CREATE TABLE #TempResults_OneDay (
+    ToAddress NVARCHAR(32),
+    Body NVARCHAR(MAX),
+    StatusID NVARCHAR(32),
+	SentTime DATETIME2(7)
+)
 
-                    IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @table_name AND COLUMN_NAME = ''OriginalID'')
-                        BEGIN
-                            DECLARE @sql_query1 NVARCHAR(MAX)
-                            SELECT @sql_query1 = ''INSERT INTO #TempResults (ToAddress, Body, StatusID) '' +
-                                ''select ToAddress, Body, StatusID '' +
-                                ''from '' + @table_name + '' a '' +
-                                ''inner join '' + @table_name + ''_Sms '' + '' b '' +
-                                ''on a.OriginalID=b.MessageID ''
-                            EXEC sp_executesql @sql_query1
-                        END
-                    ELSE
-                        BEGIN
-                            DECLARE @sql_query2 NVARCHAR(MAX)
-                            SELECT @sql_query2 = ''INSERT INTO #TempResults (ToAddress, Body, StatusID) '' +
-                                ''select ToAddress, Body, StatusID '' +
-                                ''from '' + @table_name + '' a '' +
-                                ''inner join '' + @table_name + ''_Sms'' + '' b '' +
-                                ''on a.id=b.MessageID ''
-                            EXEC sp_executesql @sql_query2
-                        END
-                END'
+SELECT @command = '
+DECLARE @currentDB NVARCHAR(MAX);
+DECLARE @table_name NVARCHAR(MAX);
+DECLARE @sql_query NVARCHAR(MAX);
 
-                EXEC sp_MSforeachdb @command
- 
-                SELECT * FROM #TempResults
-                ORDER BY """
-                + pagination.sort_by
-                + " "
-                + pagination.sort_order
-                + """
-                OFFSET """
-                + str((pagination.page - 1) * pagination.page_size)
-                + """ ROWS
-                FETCH NEXT """
-                + str(pagination.page_size)
-                + """ ROWS ONLY
-                 
-                DROP TABLE #TempResults
-                """
-            )
-            results = db.execute(query).fetchall()
-            cureent_msg = [
-                {
-                    "ToAddress": result[0],
-                    # "senttime": result[1],
-                    "Body": result[1],
-                    "StatusID": result[2],
-                }
-                for result in results
-            ]
-            if cureent_msg is not None:
-                messages = messages + cureent_msg
-        except Exception as e:
-            print(e)
+SET @currentDB = ''?''; -- Store the current database name
 
+IF (@currentDB LIKE ''au%'' OR @currentDB LIKE ''ar%'') AND @currentDB NOT LIKE ''auron_sms'' AND @currentDB NOT LIKE ''Auintegration'' AND @currentDB NOT LIKE ''AuSmsServer-gw8'' AND @currentDB NOT LIKE ''ArchAuSmsServer-gw8'' 
+BEGIN 
+USE [?]
+    IF (LOWER(LEFT(@currentDB, 2)) = ''ar'')
+        SET @table_name = ''ArchMessages''
+    ELSE
+        SET @table_name = ''Messages''
+
+    IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @table_name AND COLUMN_NAME = ''OriginalID'')
+        BEGIN
+            SET @sql_query = 
+                ''INSERT INTO #TempResults_OneDay (ToAddress, Body, StatusID, SentTime) '' +
+                ''SELECT ToAddress, Body, StatusID, SentTime '' +
+                ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a '' +
+                ''INNER JOIN '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + ''_Sms b '' +
+                ''ON a.OriginalID = b.MessageID '' +''where a.SentTime BETWEEN DATEADD(DAY, -1, GETDATE()) AND GETDATE();''
+
+            EXEC sp_executesql @sql_query
+        END
+    ELSE
+        BEGIN
+            SET @sql_query = 
+                ''INSERT INTO #TempResults_OneDay (ToAddress, Body, StatusID, SentTime) '' +
+                ''SELECT ToAddress, Body, StatusID, SentTime '' +
+                ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a '' +
+                ''INNER JOIN '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + ''_Sms b '' +
+                ''ON a.id = b.MessageID '' + ''where a.SentTime BETWEEN DATEADD(DAY, -1, GETDATE()) AND GETDATE();''
+
+            EXEC sp_executesql @sql_query
+        END
+END'
+
+EXEC sp_MSforeachdb @command
+
+SELECT * FROM #TempResults_OneDay
+ORDER BY """
++ pagination.sort_by
++ " "
++ pagination.sort_order
++ """
+OFFSET """
++ str((pagination.page - 1) * pagination.page_size)
++ """ ROWS
+FETCH NEXT """
++ str(pagination.page_size)
++ """ ROWS ONLY
+    
+DROP TABLE #TempResults_OneDay
+        """
+        )
+        results = db.execute(query).fetchall()
+        messages = [
+            {
+                "ToAddress": result[0],
+                "Body": result[1],
+                "StatusID": result[2],
+                "SentTime": result[3],
+            }
+            for result in results
+        ]
+       
         return messages
     except Exception as e:
         raise HTTPException(
@@ -109,99 +113,96 @@ async def get_all_sms(
 
 @router.get("/phone/{mobile_number}")
 async def get_all_sms_by_phone_number(
-    mobile_number: str, db: Session = Depends(get_db)
+    mobile_number: str, 
+    pagination: PaginationParams.PaginationParams = Depends(),
+    db: Session = Depends(get_db)
 ):
     print(mobile_number)
     try:
         messages = []
 
-        try:
-            query = text(
-                """
-                DECLARE @command varchar(MAX)
-                CREATE TABLE #TempResults (
-                    ToAddress varchar(MAX),
-                    Body varchar(MAX),
-                    StatusID int
-                )
+        query = text(
+            """
+DECLARE @command NVARCHAR(MAX)
 
-                SELECT @command = 'IF (''?'' LIKE ''au%'' OR ''?'' LIKE ''ar%'') AND ''?'' NOT LIKE ''auron_sms''
-                BEGIN 
-                    USE ? 
-                    DECLARE @table_name varchar(MAX)
-                    
-                    IF (LOWER(LEFT(''?'', 2)) = ''ar'')
-                        SET @table_name = ''ArchMessages''
-                    ELSE
-                        SET @table_name = ''Messages''
+CREATE TABLE #TempResults (
+    ToAddress NVARCHAR(32),
+    Body NVARCHAR(MAX),
+    StatusID NVARCHAR(32),
+    SentTime DATETIME2(7)
+)
 
-                    IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @table_name AND COLUMN_NAME = ''OriginalID'')
-                        BEGIN
-                            DECLARE @sql_query1 NVARCHAR(MAX)
-                            SELECT @sql_query1 = ''INSERT INTO #TempResults (ToAddress, Body, StatusID) '' +
-                                ''select ToAddress, Body, StatusID '' +
-                                ''from '' + @table_name + '' a '' +
-                                ''inner join '' + @table_name + ''_Sms '' + '' b '' +
-                                ''on a.OriginalID=b.MessageID where ToAddress = """
-                + mobile_number
-                + """ ''
-                            EXEC sp_executesql @sql_query1
-                        END
-                    ELSE
-                        BEGIN
-                            DECLARE @sql_query2 NVARCHAR(MAX)
-                            SELECT @sql_query2 = ''INSERT INTO #TempResults (ToAddress, Body, StatusID) '' +
-                                ''select ToAddress, Body, StatusID '' +
-                                ''from '' + @table_name + '' a '' +
-                                ''inner join '' + @table_name + ''_Sms'' + '' b '' +
-                                ''on a.id=b.MessageID where ToAddress = """
-                + mobile_number
-                + """ ''
-                            EXEC sp_executesql @sql_query2
-                        END
-                END'
+SELECT @command = '
+DECLARE @currentDB NVARCHAR(MAX);
+DECLARE @table_name NVARCHAR(MAX);
+DECLARE @sql_query NVARCHAR(MAX);
 
-                EXEC sp_MSforeachdb @command
- 
-                SELECT * FROM #TempResults
+SET @currentDB = ''?''; -- Store the current database name
 
-                DROP TABLE #TempResults
-                """
-            )
-            results = db.execute(query).fetchall()
-            cureent_msg = [
-                {
-                    "ToAddress": result[0],
-                    # "senttime": result[1],
-                    "Body": result[1],
-                    "StatusID": result[2],
-                }
-                for result in results
-            ]
-            if cureent_msg is not None:
-                messages = messages + cureent_msg
-        except Exception as e:
-            print(e)
-            # query = text(
-            #     f"select ToAddress,senttime, Body,StatusID  from [{all_dbs[i]}].dbo.{table_name} a,[{all_dbs[i]}].dbo.{table_name}_Sms b where a.id=b.MessageID and  ToAddress like :mobile_number order by SentTime desc"
-            # )
-            # results = db.execute(
-            #     query, {"mobile_number": f"%{mobile_number}%"}
-            # ).fetchall()
-            # cureent_msg = [
-            #     {
-            #         "ToAddress": result[0],
-            #         "senttime": result[1],
-            #         "Body": result[2],
-            #         "StatusID": result[3],
-            #     }
-            #     for result in results
-            # ]
-            # if cureent_msg is not None:
-            #     messages = messages + cureent_msg
-            # print(all_dbs[i])
-            # pass
+IF (@currentDB LIKE ''au%'' OR @currentDB LIKE ''ar%'') AND @currentDB NOT LIKE ''auron_sms'' AND @currentDB NOT LIKE ''Auintegration'' AND @currentDB NOT LIKE ''AuSmsServer-gw8'' AND @currentDB NOT LIKE ''ArchAuSmsServer-gw8'' 
+BEGIN 
+    USE [?]
+    IF (LOWER(LEFT(@currentDB, 2)) = ''ar'')
+        SET @table_name = ''ArchMessages''
+    ELSE
+        SET @table_name = ''Messages''
 
+    IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @table_name AND COLUMN_NAME = ''OriginalID'')
+        BEGIN
+            SET @sql_query = 
+                ''INSERT INTO #TempResults (ToAddress, SentTime, Body, StatusID) '' +
+                ''SELECT ToAddress, SentTime, Body, StatusID '' +
+                ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a '' +
+                ''INNER JOIN '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + ''_Sms b '' +
+                ''ON a.OriginalID = b.MessageID '' +
+                ''WHERE b.ToAddress LIKE ''''"""+"""%"""+mobile_number+"""%"""+"""'''';''
+
+            EXEC sp_executesql @sql_query
+        END
+    ELSE
+        BEGIN
+            SET @sql_query = 
+                ''INSERT INTO #TempResults (ToAddress, SentTime, Body, StatusID) '' +
+                ''SELECT ToAddress, SentTime, Body, StatusID '' +
+                ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a '' +
+                ''INNER JOIN '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + ''_Sms b '' +
+                ''ON a.id = b.MessageID '' +
+                ''WHERE b.ToAddress LIKE ''''"""+"""%"""+mobile_number+"""%"""+"""'''';''
+
+            EXEC sp_executesql @sql_query
+        END
+END'
+
+EXEC sp_MSforeachdb @command
+
+SELECT * FROM #TempResults
+ORDER BY """
++ pagination.sort_by
++ " "
++ pagination.sort_order
++ """
+OFFSET """
++ str((pagination.page - 1) * pagination.page_size)
++ """ ROWS
+FETCH NEXT """
++ str(pagination.page_size)
++ """ ROWS ONLY
+
+DROP TABLE #TempResults
+            """
+        )
+
+        results = db.execute(query).fetchall()
+        messages = [
+            {
+                "ToAddress": result[0],
+                "SentTime": result[1],
+                "Body": result[2],
+                "StatusID": result[3],
+            }
+            for result in results
+        ]
+        
         return messages
     except Exception as e:
         raise HTTPException(
@@ -209,125 +210,6 @@ async def get_all_sms_by_phone_number(
         )
 
 
-@router.get("/filter-test")
-async def perform_filter_test(
-    toAddress: Optional[str] = Query(None),
-    pagination: PaginationParams.PaginationParams = Depends(),
-    db: Session = Depends(get_db),
-):
-    try:
-        messages = []
-        try:
-            query = text(
-                """
-                SELECT * FROM [user]
-                where (:username IS NULL OR username like :username)
-                """
-            )
-            if toAddress is not None:
-                toAddress = f"%{toAddress}%"
-            results = db.execute(query, {"username": toAddress}).fetchall()
-            cureent_msg = [
-                {
-                    "ToAddress": result[0],
-                    # "senttime": result[1],
-                    "Body": result[1],
-                    "StatusID": result[2],
-                }
-                for result in results
-            ]
-            if cureent_msg is not None:
-                messages = messages + cureent_msg
-        except Exception as e:
-            print(e)
-
-        return messages
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error executing SQL query: {str(e)}"
-        )
 
 
-@router.get("/search")
-async def search(
-    mobileNumber: Optional[str] = Query(None),
-    startDate: Optional[str] = Query(None),
-    endDate: Optional[str] = Query(None),
-    pagination: PaginationParams.PaginationParams = Depends(),
-    db: Session = Depends(get_db),
-):
-    try:
-        messages = []
-        try:
-            query = text(
-                """
-                DECLARE @command varchar(MAX)
-                CREATE TABLE #TempResults (
-                    ToAddress varchar(MAX),
-                    Body varchar(MAX),
-                    StatusID int
-                )
 
-                SELECT @command = 'IF (''?'' LIKE ''au%'' OR ''?'' LIKE ''ar%'') AND ''?'' NOT LIKE ''auron_sms''
-                BEGIN 
-                    USE ? 
-                    DECLARE @table_name varchar(MAX)
-                    
-                    IF (LOWER(LEFT(''?'', 2)) = ''ar'')
-                        SET @table_name = ''ArchMessages''
-                    ELSE
-                        SET @table_name = ''Messages''
-
-                    IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @table_name AND COLUMN_NAME = ''OriginalID'')
-                        BEGIN
-                            DECLARE @sql_query1 NVARCHAR(MAX)
-                            SELECT @sql_query1 = ''INSERT INTO #TempResults (ToAddress, Body, StatusID) '' +
-                                ''select ToAddress, Body, StatusID '' +
-                                ''from '' + @table_name + '' a '' +
-                                ''inner join '' + @table_name + ''_Sms '' + '' b '' +
-                                ''on a.OriginalID=b.MessageID where '' + 
-                                ''(':mobileNumber' IS NULL OR ToAddress like ':mobileNumber') ''
-                            EXEC sp_executesql @sql_query1
-                        END
-                    ELSE
-                        BEGIN
-                            DECLARE @sql_query2 NVARCHAR(MAX)
-                            SELECT @sql_query2 = ''INSERT INTO #TempResults (ToAddress, Body, StatusID) '' +
-                                ''select ToAddress, Body, StatusID '' +
-                                ''from '' + @table_name + '' a '' +
-                                ''inner join '' + @table_name + ''_Sms'' + '' b '' +
-                                ''on a.id=b.MessageID where '' + 
-                                ''(':mobileNumber' IS NULL OR ToAddress like ':mobileNumber') ''
-                            EXEC sp_executesql @sql_query2
-                        END
-                END'
-
-                EXEC sp_MSforeachdb @command
- 
-                SELECT * FROM #TempResults
-
-                DROP TABLE #TempResults
-                """
-            )
-            if mobileNumber is not None:
-                mobileNumber = f"%{mobileNumber}%"
-            results = db.execute(query, {"mobileNumber": mobileNumber}).fetchall()
-            cureent_msg = [
-                {
-                    "ToAddress": result[0],
-                    # "senttime": result[1],
-                    "Body": result[1],
-                    "StatusID": result[2],
-                }
-                for result in results
-            ]
-            if cureent_msg is not None:
-                messages = messages + cureent_msg
-        except Exception as e:
-            print(e)
-
-        return messages
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error executing SQL query: {str(e)}"
-        )
