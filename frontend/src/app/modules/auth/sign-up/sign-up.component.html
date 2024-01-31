@@ -66,7 +66,7 @@
         <button class="fuse-mat-button-large w-full mt-6" mat-flat-button [color]="'primary'"
           [disabled]="signUpForm.disabled" (click)="signUp()">
           <span *ngIf="!signUpForm.disabled">
-            Create your free account
+            Sign Up
           </span>
           <mat-progress-spinner *ngIf="signUpForm.disabled" [diameter]="24"
             [mode]="'indeterminate'"></mat-progress-spinner>
@@ -98,7 +98,7 @@
     </svg>
     <!-- @formatter:on -->
     <!-- Content -->
-    <div class="z-10 relative w-full max-w-2xl">
+    <!-- <div class="z-10 relative w-full max-w-2xl">
       <div class="text-7xl font-bold leading-none text-gray-100">
         <div>Welcome to</div>
         <div>our community</div>
@@ -125,6 +125,6 @@
         <div class="ml-4 font-medium tracking-tight text-gray-400">More than 17k people joined us, it's your
           turn</div>
       </div>
-    </div>
+    </div> -->
   </div>
 </div>

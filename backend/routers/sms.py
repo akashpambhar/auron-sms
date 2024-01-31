@@ -23,7 +23,11 @@ async def get_all_sms(
 ):
     print(pagination)
     try:
-        messages = []
+        messages = {
+            "items": [],
+            "total": 0,
+            "paginator": pagination
+        }
 
         query = text(
             """
@@ -33,7 +37,8 @@ CREATE TABLE #TempResults_OneDay (
     ToAddress NVARCHAR(32),
     Body NVARCHAR(MAX),
     StatusID NVARCHAR(32),
-	SentTime DATETIME2(7)
+	SentTime DATETIME2(7),
+    TotalCount BIGINT
 )
 
 SELECT @command = '
@@ -77,7 +82,10 @@ END'
 
 EXEC sp_MSforeachdb @command
 
-SELECT * FROM #TempResults_OneDay
+DECLARE @TotalCount BIGINT;
+SET @TotalCount = (SELECT COUNT(*) FROM #TempResults_OneDay);
+
+SELECT *, @TotalCount As TotalCount FROM #TempResults_OneDay
 ORDER BY """
 + pagination.sort_by
 + " "
@@ -94,7 +102,8 @@ DROP TABLE #TempResults_OneDay
         """
         )
         results = db.execute(query).fetchall()
-        messages = [
+
+        messages["items"] = [
             {
                 "ToAddress": result[0],
                 "Body": result[1],
@@ -103,6 +112,8 @@ DROP TABLE #TempResults_OneDay
             }
             for result in results
         ]
+
+        messages["total"] = results[0][5]
        
         return messages
     except Exception as e:
@@ -119,7 +130,11 @@ async def get_all_sms_by_phone_number(
 ):
     print(mobile_number)
     try:
-        messages = []
+        messages = {
+            "items": [],
+            "total": 0,
+            "paginator": pagination
+        }
 
         query = text(
             """
@@ -129,7 +144,8 @@ CREATE TABLE #TempResults (
     ToAddress NVARCHAR(32),
     Body NVARCHAR(MAX),
     StatusID NVARCHAR(32),
-    SentTime DATETIME2(7)
+    SentTime DATETIME2(7),
+    TotalCount BIGINT
 )
 
 SELECT @command = '
@@ -175,7 +191,10 @@ END'
 
 EXEC sp_MSforeachdb @command
 
-SELECT * FROM #TempResults
+DECLARE @TotalCount BIGINT;
+SET @TotalCount = (SELECT COUNT(*) FROM #TempResults);
+
+SELECT *, @TotalCount As TotalCount FROM #TempResults
 ORDER BY """
 + pagination.sort_by
 + " "
@@ -193,15 +212,17 @@ DROP TABLE #TempResults
         )
 
         results = db.execute(query).fetchall()
-        messages = [
+        messages["items"] = [
             {
                 "ToAddress": result[0],
-                "SentTime": result[1],
-                "Body": result[2],
-                "StatusID": result[3],
+                "Body": result[1],
+                "StatusID": result[2],
+                "SentTime": result[3],
             }
             for result in results
         ]
+
+        messages["total"] = results[0][5]
         
         return messages
     except Exception as e:

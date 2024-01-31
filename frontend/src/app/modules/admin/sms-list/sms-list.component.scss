@@ -6,3 +6,10 @@
   column-gap: 10px;
   margin-bottom: 10px;
 }
+
+.spinner-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}

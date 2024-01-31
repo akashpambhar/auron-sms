@@ -1,35 +1,17 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatInputModule } from '@angular/material/input';
-import { MatPaginatorModule } from '@angular/material/paginator';
+import { MatPaginator, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { SmsService } from 'app/modules/services/sms.service';
+import { PageSort } from 'app/modules/models/utils';
 // const moment = require('moment-timezone');
 
-export interface PeriodicElement {
-  ToAddress: string;
-  Body: string;
-  StatusID: number;
-  senttime: Date;
-}
-
-const ELEMENT_DATA: PeriodicElement[] = [
-  { ToAddress: '1', Body: 'Hydrogen', StatusID: 1.0079, senttime: new Date() },
-  { ToAddress: '2', Body: 'Helium', StatusID: 4.0026, senttime: new Date() },
-  { ToAddress: '3', Body: 'Lithium', StatusID: 6.941, senttime: new Date() },
-  { ToAddress: '4', Body: 'Beryllium', StatusID: 9.0122, senttime: new Date() },
-  { ToAddress: '5', Body: 'Boron', StatusID: 10.811, senttime: new Date() },
-  // { ToAddress: '6', Body: 'Carbon', StatusID: 12.0107, senttime: new Date() },
-  // { ToAddress: '7', Body: 'Nitrogen', StatusID: 14.0067, senttime: new Date() },
-  // { ToAddress: '8', Body: 'Oxygen', StatusID: 15.9994, senttime: new Date() },
-  // { ToAddress: '9', Body: 'Fluorine', StatusID: 18.9984, senttime: new Date() },
-  // { ToAddress: '10', Body: 'Neon', StatusID: 20.1797, senttime: new Date() },
-];
 @Component({
   selector: 'app-sms-list',
   standalone: true,
@@ -39,7 +21,7 @@ const ELEMENT_DATA: PeriodicElement[] = [
   styleUrl: './sms-list.component.scss'
 })
 export class SmsListComponent implements OnInit {
-  displayedColumns: string[] = ['ToAddress', 'Body', 'StatusID', 'senttime'];
+  displayedColumns: string[] = ['ToAddress', 'Body', 'StatusID', 'SentTime'];
   smsList = new MatTableDataSource<any>();
 
   searchTerm = ''
@@ -49,46 +31,78 @@ export class SmsListComponent implements OnInit {
     end: [null],
   });
 
+  pageAndSort: PageSort = {
+    page: 0, size: 5, sort: {
+      active: "SentTime",
+      direction: "desc"
+    }
+  };
+
+  isLoading = false;
+
   constructor(
     private fb: FormBuilder,
     private smsService: SmsService
   ) { }
 
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
+
   ngOnInit(): void {
-    this.loadAllSMSByMobileNumber('123456789')
+    this.loadSMS()
+  }
+
+  loadSMS() {
+    this.isLoading = true;
+    this.smsService.getAllSMS(this.pageAndSort).subscribe((data => {
+      this.smsList = data.items;
+      this.paginator.length = data.total;
+      this.paginator.pageIndex = data.paginator.page - 1;
+      this.pageAndSort.page = data.paginator.page - 1;
+      this.isLoading = false;
+    }))
   }
 
   onDateRangeChange() {
   }
 
   searchSMS() {
-    // let startDate = moment(this.dateRange.getRawValue()['start']);
-    // let endDate = moment(this.dateRange.getRawValue()['end']);
+    this.isLoading = true;
 
-    // if (!startDate.isValid()) {
-    //   startDate = null;
-    // } else {
-    //   startDate = startDate.format("YYYY-MM-DD");
-    // }
-
-    // if (!endDate.isValid()) {
-    //   endDate = null;
-    // } else {
-    //   endDate = endDate.format("YYYY-MM-DD");
-    // }
-    console.log(this.searchTerm);
-    console.log(this.dateRange.getRawValue());
-    this.loadAllSMSByMobileNumber(this.searchTerm);
+    this.smsService.searchAllSMSByMobileNumber(this.searchTerm, this.pageAndSort).subscribe((data => {
+      this.smsList = data.items;
+      this.paginator.length = data.total;
+      this.paginator.pageIndex = data.paginator.page - 1;
+      this.pageAndSort.page = data.paginator.page - 1;
+      this.isLoading = false;
+    }))
   }
 
   resetFilter() {
     this.searchTerm = '';
     this.dateRange.reset();
+    this.resetPageSort();
+    this.loadSMS();
   }
 
-  loadAllSMSByMobileNumber(mobileNumber: string) {
-    this.smsService.getAllSMSByMobileNumber(mobileNumber).subscribe((data => {
-      this.smsList = data;
-    }))
+  resetPageSort() {
+    this.paginator.pageIndex = 0;
+    this.paginator.pageSize = 5;
+    this.pageAndSort = {
+      page: 0, size: 5, sort: {
+        active: "SentTime",
+        direction: "desc"
+      }
+    };
   }
+
+  nextPage(event: PageEvent) {
+    this.pageAndSort.page = event.pageIndex;
+    this.pageAndSort.size = event.pageSize;
+
+    if (this.searchTerm)
+      this.searchSMS();
+    else
+      this.loadSMS();
+  }
+
 }
