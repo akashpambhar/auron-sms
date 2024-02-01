@@ -1,0 +1,26 @@
+<div class="container">
+    <div class="row">
+        <h1>SMS Detail</h1>
+    </div>
+    <div class="row m-5 border-2 p-5">
+        <h3>ToAddress</h3>
+        <p>{{ sms.ToAddress }}</p>
+    </div>
+    <div class="row m-5 border-2 p-5">
+        <h3>Body</h3>
+        <p>{{ sms.Body }}</p>
+    </div>
+    <div class="row m-5 border-2 p-5">
+        <h3>StatusID</h3>
+        <p>{{ sms.StatusID }}</p>
+    </div>
+    <div class="row m-5 border-2 p-5">
+        <h3>SentTime</h3>
+        <p>{{ sms.SentTime }}</p>
+    </div>
+    <div class="row m-5">
+        <button class="fuse-mat-button bg-primary-200" mat-flat-button (click)="exportPDF()">
+            Export PDf
+        </button>
+    </div>
+</div>

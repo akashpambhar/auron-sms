@@ -10,6 +10,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { SmsService } from 'app/modules/services/sms.service';
 import { PageSort } from 'app/modules/models/utils';
+import { MatDialog } from '@angular/material/dialog';
+import { SmsDetailComponent } from '../sms-detail/sms-detail.component';
+import { saveAs } from 'file-saver';
 // const moment = require('moment-timezone');
 
 @Component({
@@ -42,7 +45,8 @@ export class SmsListComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
-    private smsService: SmsService
+    private smsService: SmsService,
+    public dialog: MatDialog
   ) { }
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
@@ -77,6 +81,17 @@ export class SmsListComponent implements OnInit {
     }))
   }
 
+  exportExcel(){
+    this.smsService.exportExcel(this.searchTerm, this.pageAndSort).subscribe((data => {
+      this.handleFileDownload(data);
+    }))
+  }
+
+  private handleFileDownload(response: any): void {
+    const blob = new Blob([response.body], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob);
+  }
+
   resetFilter() {
     this.searchTerm = '';
     this.dateRange.reset();
@@ -103,6 +118,12 @@ export class SmsListComponent implements OnInit {
       this.searchSMS();
     else
       this.loadSMS();
+  }
+
+  openDialog(data:any) {
+    const dialogRef = this.dialog.open(SmsDetailComponent, {
+      data: data
+    })
   }
 
 }

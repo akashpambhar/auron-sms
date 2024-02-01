@@ -1,3 +1,4 @@
+import datetime
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -5,6 +6,9 @@ from database import SessionLocal
 from utils import PaginationParams
 from typing import Optional
 import random
+import xlsxwriter
+from fastapi.responses import FileResponse
+import os
 
 router = APIRouter(prefix="/sms", tags=["sms"])
 
@@ -22,8 +26,6 @@ async def get_all_sms(
     pagination: PaginationParams.PaginationParams = Depends(),
     db: Session = Depends(get_db),
 ):
-    print(pagination)
-
     random_number = str(random.randint(1, 10000000))
 
     try:
@@ -240,6 +242,49 @@ DROP TABLE #TempResults_""" + random_number + """
         )
 
 
+@router.get("/file/excel")
+async def get_excel_file(
+    pagination: PaginationParams.PaginationParams = Depends(),
+    db: Session = Depends(get_db),
+    mobileNumber: Optional[str] = Query(None),
+):
+    if(mobileNumber is not None):
+        sms_list = await get_all_sms_by_phone_number(mobile_number=mobileNumber, pagination=pagination, db=db)
+    else:
+        sms_list = await get_all_sms(pagination=pagination, db=db)
+    
+    file_name = create_excel_file(sms_list["items"])
 
+    file_path = os.getcwd() + "\\excel\\" + file_name
 
+    return FileResponse(path=file_path, filename=file_name, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
+def create_excel_file(sms_list):
+    random_number = str(random.randint(1, 10000000))
+    file_name = random_number + "_excel.xlsx"
+
+    workbook = xlsxwriter.Workbook(os.getcwd() + "/excel/" + file_name)
+    worksheet = workbook.add_worksheet()
+
+    date_format = workbook.add_format({'num_format': 'yyyy-mm-dd hh:mm:ss.000'})
+    
+    row = 0
+
+    worksheet.write(row, 0, "ToAddress")
+    worksheet.write(row, 1, "Body")
+    worksheet.write(row, 2, "StatusID")
+    worksheet.write(row, 3, "SentTime")
+
+    row += 1
+
+    for sms in sms_list :
+        worksheet.write(row, 0, sms["ToAddress"])
+        worksheet.write(row, 1, sms["Body"])
+        worksheet.write(row, 2, sms["StatusID"])
+        sent_time = datetime.datetime.strptime(str(sms["SentTime"]), '%Y-%m-%d %H:%M:%S.%f')
+        worksheet.write(row, 3, sent_time, date_format)
+        row += 1
+        
+    workbook.close()
+
+    return file_name
