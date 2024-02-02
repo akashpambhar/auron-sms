@@ -26,8 +26,8 @@
         </span>
       </button>
 
-      <button class="fuse-mat-button bg-primary-200" mat-flat-button (click)="resetFilter()">Reset</button>
-      <button class="fuse-mat-button w-80 bg-accent-300" mat-flat-button (click)="exportExcel()">Export to Excel</button>
+      <button class="fuse-mat-button bg-accent-300" mat-flat-button (click)="resetFilter()">Reset</button>
+      <button class="fuse-mat-button w-80 bg-primary-200" mat-flat-button (click)="exportExcel()">Export to Excel</button>
     </div>
     <div>
       <table mat-table [dataSource]="smsList" *ngIf="!isLoading">

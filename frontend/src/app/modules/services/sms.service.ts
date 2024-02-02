@@ -62,4 +62,11 @@ export class SmsService {
       responseType: 'blob' as 'json'
     });
   }
+
+  exportPDF(data:any): Observable<any>{
+    return this.http.post<any>(`${this.url}/file/pdf`, data, {
+      observe: 'response',
+      responseType: 'blob' as 'json'
+    });
+  }
 }

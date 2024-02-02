@@ -8,6 +8,7 @@ from typing import Optional
 import random
 import xlsxwriter
 from fastapi.responses import FileResponse
+from pyreportjasper import PyReportJasper
 import os
 
 router = APIRouter(prefix="/sms", tags=["sms"])
@@ -107,23 +108,20 @@ FETCH NEXT """
 DROP TABLE #TempResults_""" + random_number + """
         """
         )
-
-        print(query)
         results = db.execute(query).fetchall()
 
-        print(results)
+        if results != []:
+            messages["items"] = [
+                {
+                    "ToAddress": result[0],
+                    "Body": result[1],
+                    "StatusID": result[2],
+                    "SentTime": result[3],
+                }
+                for result in results
+            ]
 
-        messages["items"] = [
-            {
-                "ToAddress": result[0],
-                "Body": result[1],
-                "StatusID": result[2],
-                "SentTime": result[3],
-            }
-            for result in results
-        ]
-
-        messages["total"] = results[0][5]
+            messages["total"] = results[0][5]
        
         return messages
     except Exception as e:
@@ -223,17 +221,18 @@ DROP TABLE #TempResults_""" + random_number + """
         )
 
         results = db.execute(query).fetchall()
-        messages["items"] = [
-            {
-                "ToAddress": result[0],
-                "Body": result[1],
-                "StatusID": result[2],
-                "SentTime": result[3],
-            }
-            for result in results
-        ]
+        if results != []:
+            messages["items"] = [
+                {
+                    "ToAddress": result[0],
+                    "Body": result[1],
+                    "StatusID": result[2],
+                    "SentTime": result[3],
+                }
+                for result in results
+            ]
 
-        messages["total"] = results[0][5]
+            messages["total"] = results[0][5]
         
         return messages
     except Exception as e:
@@ -288,3 +287,35 @@ def create_excel_file(sms_list):
     workbook.close()
 
     return file_name
+
+
+@router.post("/file/pdf")
+async def export_pdf(content: dict):
+    print(content)
+    obj = {
+        "MessageID": content["MessageID"],
+        "ToAddress": content["ToAddress"],
+        "Body": content["Body"],
+        "StatusID": content["StatusID"],
+        "SentTime": content["SentTime"]
+    }
+
+    CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
+    PARENT_DIR = os.path.abspath(os.path.join(CURRENT_DIR, os.pardir))
+    REPORTS_DIR = os.path.join(PARENT_DIR, 'reports')
+
+    random_number = str(random.randint(1, 10000000))
+    file_name = random_number + "_sms_report.pdf"
+    
+    input_file = os.path.join(REPORTS_DIR, 'auron-pdf.jrxml')
+    output_file = os.path.join(REPORTS_DIR, file_name)
+
+    pyreportjasper = PyReportJasper()
+    pyreportjasper.config(
+        input_file,
+        output_file,
+        output_formats=["pdf"],
+        parameters=obj
+    )
+    pyreportjasper.process_report()
+    return FileResponse(output_file, filename=file_name, media_type="application/pdf")

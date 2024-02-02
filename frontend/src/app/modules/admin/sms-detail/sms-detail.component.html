@@ -19,8 +19,11 @@
         <p>{{ sms.SentTime }}</p>
     </div>
     <div class="row m-5">
-        <button class="fuse-mat-button bg-primary-200" mat-flat-button (click)="exportPDF()">
+        <button class="fuse-mat-button bg-primary-200" *ngIf="!isLoading" mat-flat-button (click)="exportPDF()">
             Export PDf
         </button>
+        <div class="spinner-container">
+            <mat-progress-spinner *ngIf="isLoading" [diameter]="40" [mode]="'indeterminate'"></mat-progress-spinner>
+        </div>
     </div>
 </div>
