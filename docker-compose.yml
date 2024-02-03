@@ -27,7 +27,7 @@ services:
     image: ${BACKEND_APP_NAME}
     container_name: ${BACKEND_APP_NAME}
     env_file:
-      - ./.env
+      - .env
     build:
       context: .
       dockerfile: backend/Dockerfile
