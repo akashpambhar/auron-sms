@@ -20,7 +20,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
 def get_auth_scheme():
-    return OAuth2PasswordBearer(tokenUrl="/auth")
+    return OAuth2PasswordBearer(tokenUrl="/auth/signin")
 
 
 oauth2_scheme = get_auth_scheme()
@@ -37,7 +37,7 @@ def get_db():
 
 @router.post("/signin")
 async def login_for_access_token(
-    user_signin: UserSchema.UserSignIn,
+    user_signin: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Annotated[Session, Depends(get_db)],
 ) -> TokenSchema.Token:
     user = authenticate_user(user_signin.username, user_signin.password, db)
@@ -56,7 +56,6 @@ async def login_for_access_token(
 
 @router.post("/signup")
 async def signup(userSignup: UserSchema.UserSignUp, db: Session = Depends(get_db)):
-    # Check if username or email already exists
     existing_user = db.execute(
         select(User.User).where(
             (User.User.username == userSignup.username)
@@ -156,7 +155,7 @@ async def get_current_active_user(
 async def get_current_admin_user(
     current_user: Annotated[UserSchema.User, Depends(get_current_active_user)]
 ):
-    if "admin" not in [role.roleName for role in current_user.roles]:
+    if 1 != current_user.role_id or current_user.disabled is None or current_user.disabled == True:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have access to this resource",
@@ -167,7 +166,7 @@ async def get_current_admin_user(
 async def get_current_normal_user(
     current_user: Annotated[UserSchema.User, Depends(get_current_active_user)]
 ):
-    if "user" not in [role.roleName for role in current_user.roles]:
+    if 2 != current_user.role_id or current_user.disabled is None or current_user.disabled == True:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have access to this resource",
@@ -178,21 +177,33 @@ async def get_current_normal_user(
 async def get_current_other_user(
     current_user: Annotated[UserSchema.User, Depends(get_current_active_user)]
 ):
-    if "other" not in [role.roleName for role in current_user.roles]:
+    if 3 != current_user.role_id or current_user.disabled is None or current_user.disabled == True:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have access to this resource",
         )
     return current_user
 
+async def get_current_admin_and_normal_user(
+    current_user: Annotated[UserSchema.User, Depends(get_current_active_user)]
+):
+    if current_user.role_id not in [1,2] or current_user.disabled is None or current_user.disabled == True:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to this resource",
+        )
+    return current_user
 
 def authenticate_user(username: str, password: str, db: Session):
     user = get_user(username, db)
-
+    
     if not user:
         return False
 
     if not verify_password(password, user.password):
+        return False
+    
+    if user.disabled == True or user.disabled is None:
         return False
 
     return user

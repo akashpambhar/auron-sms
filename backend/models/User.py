@@ -9,7 +9,7 @@ class User(Base):
     username = Column(String(255), unique=True, nullable=False)
     password = Column(String, nullable=False)
     email = Column(String(255), unique=True, nullable=False)
-    disabled = Column(Boolean)
+    disabled = Column(Boolean, default=False)
     role_id = Column(Integer, ForeignKey("role.role_id"), default=3)
 
     role = relationship("Role")

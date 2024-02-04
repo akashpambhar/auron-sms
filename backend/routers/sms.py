@@ -1,15 +1,18 @@
 import datetime
+import re
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from database import SessionLocal
 from utils import PaginationParams
-from typing import Optional
 import random
 import xlsxwriter
 from fastapi.responses import FileResponse
 from pyreportjasper import PyReportJasper
 import os
+from routers import auth
+from typing import Annotated
+from schemas import UserSchema
 
 router = APIRouter(prefix="/sms", tags=["sms"])
 
@@ -24,17 +27,13 @@ def get_db():
 
 @router.get("/")
 async def get_all_sms(
+    current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_and_normal_user)],
     pagination: PaginationParams.PaginationParams = Depends(),
     db: Session = Depends(get_db),
 ):
     random_number = str(random.randint(1, 10000000))
 
     try:
-        messages = {
-            "items": [],
-            "total": 0,
-            "paginator": pagination
-        }
 
         query = text(
             """
@@ -109,21 +108,7 @@ DROP TABLE #TempResults_""" + random_number + """
         """
         )
         results = db.execute(query).fetchall()
-
-        if results != []:
-            messages["items"] = [
-                {
-                    "ToAddress": result[0],
-                    "Body": result[1],
-                    "StatusID": result[2],
-                    "SentTime": result[3],
-                }
-                for result in results
-            ]
-
-            messages["total"] = results[0][5]
-       
-        return messages
+        return set_db_result_to_json(results, current_user, pagination)
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error executing SQL query: {str(e)}"
@@ -132,6 +117,7 @@ DROP TABLE #TempResults_""" + random_number + """
 
 @router.get("/phone/{mobile_number}")
 async def get_all_sms_by_phone_number(
+    current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_and_normal_user)],
     mobile_number: str, 
     pagination: PaginationParams.PaginationParams = Depends(),
     db: Session = Depends(get_db)
@@ -139,11 +125,6 @@ async def get_all_sms_by_phone_number(
     print(mobile_number)
     random_number = str(random.randint(1, 10000000))
     try:
-        messages = {
-            "items": [],
-            "total": 0,
-            "paginator": pagination
-        }
 
         query = text(
             """
@@ -221,38 +202,20 @@ DROP TABLE #TempResults_""" + random_number + """
         )
 
         results = db.execute(query).fetchall()
-        if results != []:
-            messages["items"] = [
-                {
-                    "ToAddress": result[0],
-                    "Body": result[1],
-                    "StatusID": result[2],
-                    "SentTime": result[3],
-                }
-                for result in results
-            ]
 
-            messages["total"] = results[0][5]
-        
-        return messages
+        return set_db_result_to_json(results, current_user, pagination)
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error executing SQL query: {str(e)}"
         )
 
 
-@router.get("/file/excel")
+@router.post("/file/excel")
 async def get_excel_file(
-    pagination: PaginationParams.PaginationParams = Depends(),
-    db: Session = Depends(get_db),
-    mobileNumber: Optional[str] = Query(None),
+    current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_and_normal_user)],
+    sms_list: list[dict],
 ):
-    if(mobileNumber is not None):
-        sms_list = await get_all_sms_by_phone_number(mobile_number=mobileNumber, pagination=pagination, db=db)
-    else:
-        sms_list = await get_all_sms(pagination=pagination, db=db)
-    
-    file_name = create_excel_file(sms_list["items"])
+    file_name = create_excel_file(sms_list)
 
     file_path = os.getcwd() + "\\excel\\" + file_name
 
@@ -265,7 +228,7 @@ def create_excel_file(sms_list):
     workbook = xlsxwriter.Workbook(os.getcwd() + "/excel/" + file_name)
     worksheet = workbook.add_worksheet()
 
-    date_format = workbook.add_format({'num_format': 'yyyy-mm-dd hh:mm:ss.000'})
+    date_format = workbook.add_format({'num_format': 'yyyy-mm-ddThh:mm:ss.000'})
     
     row = 0
 
@@ -280,7 +243,7 @@ def create_excel_file(sms_list):
         worksheet.write(row, 0, sms["ToAddress"])
         worksheet.write(row, 1, sms["Body"])
         worksheet.write(row, 2, sms["StatusID"])
-        sent_time = datetime.datetime.strptime(str(sms["SentTime"]), '%Y-%m-%d %H:%M:%S.%f')
+        sent_time = datetime.datetime.strptime(str(sms["SentTime"]), '%Y-%m-%dT%H:%M:%S.%f')
         worksheet.write(row, 3, sent_time, date_format)
         row += 1
         
@@ -290,7 +253,10 @@ def create_excel_file(sms_list):
 
 
 @router.post("/file/pdf")
-async def export_pdf(content: dict):
+async def export_pdf(
+    current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_and_normal_user)],
+    content: dict
+):
     print(content)
     obj = {
         "MessageID": content["MessageID"],
@@ -319,3 +285,36 @@ async def export_pdf(content: dict):
     )
     pyreportjasper.process_report()
     return FileResponse(output_file, filename=file_name, media_type="application/pdf")
+
+def set_db_result_to_json(results, current_active_user, pagination):
+    messages = {
+        "items": [],
+        "total": 0,
+        "paginator": pagination
+    }
+
+    if results != []:
+        if(current_active_user.role_id == 1):
+            messages["items"] = [
+                {
+                    "ToAddress": result[0],
+                    "Body": result[1],
+                    "StatusID": result[2],
+                    "SentTime": result[3],
+                }
+                for result in results
+            ]
+        else :
+            messages["items"] = [
+                {
+                    "ToAddress": result[0],
+                    "Body": re.sub(r"\d", "*", result[1]),
+                    "StatusID": result[2],
+                    "SentTime": result[3],
+                }
+                for result in results
+            ]
+
+        messages["total"] = results[0][5]
+
+    return messages

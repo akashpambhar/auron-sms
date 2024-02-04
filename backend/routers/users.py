@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from schemas import UserSchema
 from models import User, Role
+from routers import auth
 from sqlalchemy import select, join, text
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -26,20 +27,23 @@ def get_password_hash(password):
 
 
 @router.get("/")
-async def get_users(db: Annotated[Session, Depends(get_db)]):
+async def get_users(
+    current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)]
+):
     join_condition = User.User.role_id == Role.Role.role_id
-    query = select(join(User.User, Role.Role, join_condition))
+    query = select(User.User).select_from(join(User.User, Role.Role, join_condition)).where(User.User.username != current_user.username and User.User.role_id != 1)
 
     results = db.execute(query).fetchall()
 
     users = [
         {
-            "user_id": result[0],
-            "username": result[1],
-            "email": result[3],
-            "disabled": result[4],
-            "role_id": result[5],
-            "role_name": result[7],
+            "user_id": result[0].user_id,
+            "username": result[0].username,
+            "email": result[0].email,
+            "disabled": result[0].disabled,
+            "role_id": result[0].role.role_id,
+            "role_name": result[0].role.role_name,
         }
         for result in results
     ]
@@ -48,7 +52,10 @@ async def get_users(db: Annotated[Session, Depends(get_db)]):
 
 
 @router.get("/{user_id}")
-async def get_user_by_user_id(user_id: str, db: Annotated[Session, Depends(get_db)]):
+async def get_user_by_user_id(
+    current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_user)],
+    user_id: str, db: Annotated[Session, Depends(get_db)]
+):
     existing_user = db.execute(
         select(User.User).where(User.User.user_id == user_id)
     ).first()
@@ -64,6 +71,7 @@ async def get_user_by_user_id(user_id: str, db: Annotated[Session, Depends(get_d
 
 @router.get("/search/{username}")
 async def get_user_by_user_username(
+    current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_user)],
     username: str, db: Annotated[Session, Depends(get_db)]
 ):
     native_sql_query = text(
@@ -98,6 +106,7 @@ async def get_user_by_user_username(
 
 @router.post("/")
 async def add_user(
+    current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_user)],
     user_create: UserSchema.UserCreate, db: Annotated[Session, Depends(get_db)]
 ):
     existing_user = db.execute(
@@ -131,6 +140,7 @@ async def add_user(
 
 @router.put("/")
 async def edit_user(
+    current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_user)],
     user_edit: UserSchema.UserInDB, db: Annotated[Session, Depends(get_db)]
 ):
     db_user = db.execute(
@@ -151,3 +161,26 @@ async def edit_user(
     db.commit()
     db.refresh(db_user[0])
     return "User updated successfully"
+
+
+@router.delete("/{user_id}")
+async def delete_user_by_user_id(
+    current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_user)],
+    user_id: str, db: Annotated[Session, Depends(get_db)]
+):
+    existing_user = db.execute(
+        select(User.User).where(User.User.user_id == user_id)
+    ).first()[0]
+
+    print(existing_user)
+
+    if existing_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User not found",
+        )
+    
+    db.delete(existing_user)
+    db.commit()
+
+    return "User Deleted successfully"

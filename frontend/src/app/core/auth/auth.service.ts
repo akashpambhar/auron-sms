@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { AuthUtils } from 'app/core/auth/auth.utils';
 import { UserService } from 'app/core/user/user.service';
@@ -62,9 +62,17 @@ export class AuthService {
       return throwError('User is already logged in.');
     }
 
+    let body = new HttpParams()
+      .set('username', credentials.username)
+      .set('password', credentials.password);
+
     let url = `${this.configService.getEnvConfig().API_URL}/auth`;
 
-    return this._httpClient.post(url + '/signin', credentials).pipe(
+    return this._httpClient.post(url + '/signin', body.toString(), {
+      headers: new HttpHeaders({
+        'Content-Type': 'application/x-www-form-urlencoded',
+      }),
+    }).pipe(
       switchMap((response: any) => {
         // Store the access token in the local storage
         this.accessToken = response.access_token;
@@ -86,26 +94,26 @@ export class AuthService {
    */
   signInUsingToken(): Observable<any> {
     // Sign in using the token
-    
-        // Replace the access token with the new one if it's available on
-        // the response object.
-        //
-        // This is an added optional step for better security. Once you sign
-        // in using the token, you should generate a new one on the server
-        // side and attach it to the response object. Then the following
-        // piece of code can replace the token with the refreshed one.
-        // if (response.accessToken) {
-        //   this.accessToken = response.accessToken;
-        // }
 
-        // Set the authenticated flag to true
-        this._authenticated = true;
+    // Replace the access token with the new one if it's available on
+    // the response object.
+    //
+    // This is an added optional step for better security. Once you sign
+    // in using the token, you should generate a new one on the server
+    // side and attach it to the response object. Then the following
+    // piece of code can replace the token with the refreshed one.
+    // if (response.accessToken) {
+    //   this.accessToken = response.accessToken;
+    // }
 
-        // Store the user on the user service
-        this.setUser();
+    // Set the authenticated flag to true
+    this._authenticated = true;
 
-        // Return true
-        return of(true);
+    // Store the user on the user service
+    this.setUser();
+
+    // Return true
+    return of(true);
     //   }),
     // );
   }
@@ -146,7 +154,9 @@ export class AuthService {
    * Check the authentication status
    */
   check(): Observable<boolean> {
-    // Check if the user is logged in
+
+    
+      // Check if the user is logged in
     if (this._authenticated) {
       return of(true);
     }
@@ -161,8 +171,14 @@ export class AuthService {
       return of(false);
     }
 
+    
+
+
     // If the access token exists, and it didn't expire, sign in using it
     return this.signInUsingToken();
+   
+
+    
   }
 
   setUser() {

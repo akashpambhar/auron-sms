@@ -39,25 +39,8 @@ export class SmsService {
     });
   }
 
-  exportExcel(mobileNumber: string, pageAndSort: PageSort): Observable<any> {
-    let params = {}
-    
-    params = {
-      page: pageAndSort.page + 1,
-      page_size: pageAndSort.size,
-      sort_by: pageAndSort.sort.active,
-      sort_order: pageAndSort.sort.direction
-    }
-
-    if(mobileNumber != ''){
-      params = {
-        ...params,
-        mobileNumber: mobileNumber
-      }
-    }
-
-    return this.http.get<any>(`${this.url}/file/excel`, {
-      params: params,
+  exportExcel(smsList : any): Observable<any> {
+    return this.http.post<any>(`${this.url}/file/excel`, smsList, {
       observe: 'response',
       responseType: 'blob' as 'json'
     });

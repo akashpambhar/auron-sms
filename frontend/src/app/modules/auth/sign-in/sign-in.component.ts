@@ -73,7 +73,7 @@ export class AuthSignInComponent implements OnInit {
           } else if (user.role === 2) {
             this._router.navigateByUrl('/sms-list');
           } else if (user.role === 3) {
-            this._router.navigateByUrl('/sms-list');
+            this._router.navigateByUrl('/sign-in');
           }
         });
       },

@@ -30,4 +30,8 @@ export class UserService {
   editUser(user:any): Observable<any>{
     return this.http.put<any>(`${this.url}/users`, user);
   }
+
+  deleteById(id: number): Observable<any> {
+    return this.http.delete<any>(this.url + "/users/" + id);
+  }
 }

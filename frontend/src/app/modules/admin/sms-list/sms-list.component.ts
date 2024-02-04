@@ -82,7 +82,7 @@ export class SmsListComponent implements OnInit {
   }
 
   exportExcel(){
-    this.smsService.exportExcel(this.searchTerm, this.pageAndSort).subscribe((data => {
+    this.smsService.exportExcel(this.smsList).subscribe((data => {
       this.handleFileDownload(data);
     }))
   }

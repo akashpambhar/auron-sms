@@ -95,6 +95,12 @@ export class AdminDashboardComponent implements OnInit {
     this.openDialog(userId)
   }
 
+  deleteUser(userId: any) {
+    this.userService.deleteById(userId).subscribe((res: any) => {
+      this.loadUsers()
+    })
+  }
+
   openDialog(userId?: number) {
     const dialogRef = this.dialog.open(UserUpdateComponent, {
       data: {
