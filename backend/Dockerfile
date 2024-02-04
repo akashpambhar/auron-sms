@@ -9,7 +9,7 @@ COPY backend/. /app
 # COPY ./requirements.txt /app
 
 # Add custom font file to the Docker image
-COPY backend/lib/arial-fonts.jar /usr/local/fonts/
+COPY backend/lib/. /usr/share/fonts/truetype/
 
 # Update package lists and install Java 17
 RUN apt-get update && \
