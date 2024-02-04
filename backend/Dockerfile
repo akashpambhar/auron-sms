@@ -9,7 +9,7 @@ COPY backend/. /app
 # COPY ./requirements.txt /app
 
 # Add custom font file to the Docker image
-COPY backend/lib/. /usr/share/fonts/truetype/
+COPY backend/lib/. /usr/local/lib/python3.10/site-packages/pyreportjasper/libs/
 
 # Update package lists and install Java 17
 RUN apt-get update && \
