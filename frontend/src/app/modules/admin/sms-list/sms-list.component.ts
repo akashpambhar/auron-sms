@@ -24,7 +24,7 @@ import { saveAs } from 'file-saver';
   styleUrl: './sms-list.component.scss'
 })
 export class SmsListComponent implements OnInit {
-  displayedColumns: string[] = ['ToAddress', 'Body', 'StatusID', 'SentTime'];
+  displayedColumns: string[] = ['MessageID', 'ToAddress', 'Body', 'StatusID', 'SentTime'];
   smsList = new MatTableDataSource<any>();
 
   searchTerm = ''

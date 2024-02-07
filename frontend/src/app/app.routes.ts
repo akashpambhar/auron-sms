@@ -9,6 +9,7 @@ import { LandingHomeComponent } from './modules/landing/home/home.component';
 import { AuthSignUpComponent } from './modules/auth/sign-up/sign-up.component';
 import { SmsListComponent } from './modules/admin/sms-list/sms-list.component';
 import { AdminDashboardComponent } from './modules/admin/admin-dashboard/admin-dashboard.component';
+import { NoAccessComponent } from './modules/admin/no-access/no-access.component';
 
 // @formatter:off
 /* eslint-disable max-len */
@@ -46,15 +47,16 @@ export const appRoutes: Route[] = [
   // // Auth routes for authenticated users
   {
     path: '',
-    canActivate: [AuthGuard],
-    canActivateChild: [AuthGuard],
+    // canActivate: [AuthGuard],
+    // canActivateChild: [AuthGuard],
     component: LayoutComponent,
     data: {
       layout: 'empty'
     },
     children: [
       { path: 'sign-out', loadChildren: () => import('app/modules/auth/sign-out/sign-out.routes') },
-      { path: 'unlock-session', loadChildren: () => import('app/modules/auth/unlock-session/unlock-session.routes') }
+      // { path: 'unlock-session', loadChildren: () => import('app/modules/auth/unlock-session/unlock-session.routes') },
+      { path: 'no-access', component:NoAccessComponent }
     ]
   },
 

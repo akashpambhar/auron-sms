@@ -32,6 +32,11 @@
     <div>
       <table mat-table [dataSource]="smsList" *ngIf="!isLoading">
 
+        <ng-container matColumnDef="MessageID">
+          <th mat-header-cell *matHeaderCellDef> MessageID </th>
+          <td mat-cell *matCellDef="let element"> {{element.MessageID}} </td>
+        </ng-container>
+
         <ng-container matColumnDef="ToAddress">
           <th mat-header-cell *matHeaderCellDef> To Address </th>
           <td mat-cell *matCellDef="let element"> {{element.ToAddress}} </td>

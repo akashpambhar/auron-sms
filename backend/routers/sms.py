@@ -40,6 +40,7 @@ async def get_all_sms(
 DECLARE @command NVARCHAR(MAX)
 
 CREATE TABLE #TempResults_""" + random_number + """ (
+    MessageID int,
     ToAddress NVARCHAR(32),
     Body NVARCHAR(MAX),
     StatusID NVARCHAR(32),
@@ -65,8 +66,8 @@ USE [?]
     IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @table_name AND COLUMN_NAME = ''OriginalID'')
         BEGIN
             SET @sql_query = 
-                ''INSERT INTO #TempResults_""" + random_number + """ (ToAddress, Body, StatusID, SentTime) '' +
-                ''SELECT ToAddress, Body, StatusID, SentTime '' +
+                ''INSERT INTO #TempResults_""" + random_number + """ (MessageID, ToAddress, Body, StatusID, SentTime) '' +
+                ''SELECT MessageID, ToAddress, Body, StatusID, SentTime '' +
                 ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a '' +
                 ''INNER JOIN '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + ''_Sms b '' +
                 ''ON a.OriginalID = b.MessageID '' +''WHERE a.SentTime BETWEEN DATEADD(HOUR, -1, GETDATE()) AND GETDATE();''
@@ -76,8 +77,8 @@ USE [?]
     ELSE
         BEGIN
             SET @sql_query = 
-                ''INSERT INTO #TempResults_""" + random_number + """ (ToAddress, Body, StatusID, SentTime) '' +
-                ''SELECT ToAddress, Body, StatusID, SentTime '' +
+                ''INSERT INTO #TempResults_""" + random_number + """ (MessageID, ToAddress, Body, StatusID, SentTime) '' +
+                ''SELECT MessageID, ToAddress, Body, StatusID, SentTime '' +
                 ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a '' +
                 ''INNER JOIN '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + ''_Sms b '' +
                 ''ON a.id = b.MessageID '' + ''WHERE a.SentTime BETWEEN DATEADD(HOUR, -1, GETDATE()) AND GETDATE();''
@@ -131,6 +132,7 @@ async def get_all_sms_by_phone_number(
 DECLARE @command NVARCHAR(MAX)
 
 CREATE TABLE #TempResults_""" + random_number + """ (
+    MessageID int,
     ToAddress NVARCHAR(32),
     Body NVARCHAR(MAX),
     StatusID NVARCHAR(32),
@@ -156,8 +158,8 @@ BEGIN
     IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @table_name AND COLUMN_NAME = ''OriginalID'')
         BEGIN
             SET @sql_query = 
-                ''INSERT INTO #TempResults_""" + random_number + """ (ToAddress, SentTime, Body, StatusID) '' +
-                ''SELECT ToAddress, SentTime, Body, StatusID '' +
+                ''INSERT INTO #TempResults_""" + random_number + """ (MessageID, ToAddress, SentTime, Body, StatusID) '' +
+                ''SELECT MessageID, ToAddress, SentTime, Body, StatusID '' +
                 ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a '' +
                 ''INNER JOIN '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + ''_Sms b '' +
                 ''ON a.OriginalID = b.MessageID '' +
@@ -169,7 +171,7 @@ BEGIN
         BEGIN
             SET @sql_query = 
                 ''INSERT INTO #TempResults_""" + random_number + """ (ToAddress, SentTime, Body, StatusID) '' +
-                ''SELECT ToAddress, SentTime, Body, StatusID '' +
+                ''SELECT MessageID, ToAddress, SentTime, Body, StatusID '' +
                 ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a '' +
                 ''INNER JOIN '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + ''_Sms b '' +
                 ''ON a.id = b.MessageID '' +
@@ -232,19 +234,21 @@ def create_excel_file(sms_list):
     
     row = 0
 
-    worksheet.write(row, 0, "ToAddress")
-    worksheet.write(row, 1, "Body")
-    worksheet.write(row, 2, "StatusID")
-    worksheet.write(row, 3, "SentTime")
+    worksheet.write(row, 0, "MessageID")
+    worksheet.write(row, 1, "ToAddress")
+    worksheet.write(row, 2, "Body")
+    worksheet.write(row, 3, "StatusID")
+    worksheet.write(row, 4, "SentTime")
 
     row += 1
 
     for sms in sms_list :
-        worksheet.write(row, 0, sms["ToAddress"])
-        worksheet.write(row, 1, sms["Body"])
-        worksheet.write(row, 2, sms["StatusID"])
+        worksheet.write(row, 0, sms["MessageID"])
+        worksheet.write(row, 1, sms["ToAddress"])
+        worksheet.write(row, 2, sms["Body"])
+        worksheet.write(row, 3, sms["StatusID"])
         sent_time = datetime.datetime.strptime(str(sms["SentTime"]), '%Y-%m-%dT%H:%M:%S.%f')
-        worksheet.write(row, 3, sent_time, date_format)
+        worksheet.write(row, 4, sent_time, date_format)
         row += 1
         
     workbook.close()
@@ -259,7 +263,7 @@ async def export_pdf(
 ):
     print(content)
     obj = {
-        "MessageID": content["MessageID"],
+        "MessageID": str(content["MessageID"]),
         "ToAddress": content["ToAddress"],
         "Body": content["Body"],
         "StatusID": content["StatusID"],
@@ -297,24 +301,26 @@ def set_db_result_to_json(results, current_active_user, pagination):
         if(current_active_user.role_id == 1):
             messages["items"] = [
                 {
-                    "ToAddress": result[0],
-                    "Body": result[1],
-                    "StatusID": result[2],
-                    "SentTime": result[3],
+                    "MessageID": result[0],
+                    "ToAddress": result[1],
+                    "Body": result[2],
+                    "StatusID": result[3],
+                    "SentTime": result[4],
                 }
                 for result in results
             ]
         else :
             messages["items"] = [
                 {
-                    "ToAddress": result[0],
-                    "Body": re.sub(r"\d", "*", result[1]),
-                    "StatusID": result[2],
-                    "SentTime": result[3],
+                    "MessageID": result[0],
+                    "ToAddress": result[1],
+                    "Body": re.sub(r"\d", "*", result[2]),
+                    "StatusID": result[3],
+                    "SentTime": result[4],
                 }
                 for result in results
             ]
 
-        messages["total"] = results[0][5]
+        messages["total"] = results[0][6]
 
     return messages

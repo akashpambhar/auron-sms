@@ -12,19 +12,14 @@ export const NoAuthGuard: CanActivateFn | CanActivateChildFn = (route, state) =>
     return inject(AuthService).check().pipe(
         switchMap((authenticated) => {
             // If the user is authenticated...
-            console.log("NO AUTH GUARD");
-
             if (authenticated) {
-                console.log("NO AUTH AUTHENTICATED");
-
                 return userService.user$.pipe(switchMap((user: any) => {
-                    console.log(user);
                     if (user.role === 1) {
                         return of(router.parseUrl('admin-dashboard'));
                     } else if (user.role === 2) {
                         return of(router.parseUrl('sms-list'));
                     } else if (user.role === 3) {
-                        return of(router.parseUrl('sms-list'));
+                        return of(router.parseUrl('no-access'));
                     }
                 }));
             }

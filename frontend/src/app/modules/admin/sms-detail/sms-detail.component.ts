@@ -30,7 +30,6 @@ export class SmsDetailComponent implements OnInit {
 
   exportPDF() {
     this.isLoading = true;
-    this.sms.MessageID = ''
   
     this.smsService.exportPDF(this.sms).subscribe((res: any) => {
       this.handleFileDownload(res)

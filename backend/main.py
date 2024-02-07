@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from pymemcache.client import base
 from database import engine, SessionLocal, Base
 from routers import auth, sms, users
+from schemas import UserSchema
 
 Base.metadata.create_all(bind=engine)
 
@@ -68,7 +69,9 @@ def get_dbs():
 
 
 @app.get("/")
-async def hello_world():
+async def hello_world(
+    current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_user)]
+):
     return {"message": "Hello World"}
 
 

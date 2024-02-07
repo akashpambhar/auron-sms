@@ -3,7 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { AuthUtils } from 'app/core/auth/auth.utils';
 import { UserService } from 'app/core/user/user.service';
 import { jwtDecode } from 'jwt-decode';
-import { catchError, Observable, of, switchMap, throwError } from 'rxjs';
+import { Observable, of, switchMap, throwError } from 'rxjs';
 import { User } from '../user/user.types';
 import { ConfigService } from 'app/modules/services/config.service';
 
@@ -154,8 +154,6 @@ export class AuthService {
    * Check the authentication status
    */
   check(): Observable<boolean> {
-
-    
       // Check if the user is logged in
     if (this._authenticated) {
       return of(true);
@@ -171,14 +169,8 @@ export class AuthService {
       return of(false);
     }
 
-    
-
-
     // If the access token exists, and it didn't expire, sign in using it
     return this.signInUsingToken();
-   
-
-    
   }
 
   setUser() {
