@@ -1,9 +1,9 @@
 import datetime
 import re
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from database import SessionLocal
+from database2 import SessionLocal
 from utils import PaginationParams
 import random
 import xlsxwriter
@@ -14,7 +14,7 @@ from routers import auth
 from typing import Annotated
 from schemas import UserSchema
 
-router = APIRouter(prefix="/d1/sms", tags=["sms1"])
+router = APIRouter(prefix="/d2/sms", tags=["sms2"])
 
 
 def get_db():

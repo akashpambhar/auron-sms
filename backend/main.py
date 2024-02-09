@@ -11,7 +11,8 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 from pymemcache.client import base
 from database import engine, SessionLocal, Base
-from routers import auth, sms, users
+from database2 import SessionLocal as sl
+from routers import auth, sms, sms2, users
 from schemas import UserSchema
 
 Base.metadata.create_all(bind=engine)
@@ -31,6 +32,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(sms.router)
+app.include_router(sms2.router)
 app.include_router(users.router)
 
 oauth2_scheme = auth.get_auth_scheme()
@@ -43,22 +45,29 @@ def get_db():
     finally:
         db.close()
 
-
-def load_dbs(refresh: bool = False):
-    # Check if the result is already cached
-    result = mc.get("database_list")
-    if result is not None and not refresh:
-        return
-    with Session(autocommit=False, autoflush=False, bind=engine) as db:
-        query = text("SELECT name FROM sys.databases")
-        results = db.execute(query).fetchall()
-        databases = [result[0] for result in results]
-        json_dbs = json.dumps(databases, default=str)
-        # Cache the result
-        mc.set("database_list", json_dbs)
+def get_db2():
+    db2 = sl()
+    try:
+        yield db2
+    finally:
+        db2.close()
 
 
-load_dbs()
+# def load_dbs(refresh: bool = False):
+#     # Check if the result is already cached
+#     result = mc.get("database_list")
+#     if result is not None and not refresh:
+#         return
+#     with Session(autocommit=False, autoflush=False, bind=engine) as db:
+#         query = text("SELECT name FROM sys.databases")
+#         results = db.execute(query).fetchall()
+#         databases = [result[0] for result in results]
+#         json_dbs = json.dumps(databases, default=str)
+#         # Cache the result
+#         mc.set("database_list", json_dbs)
+
+
+# load_dbs()
 
 
 def get_dbs():
@@ -81,8 +90,8 @@ async def get_all_databases_chached():
 
 
 @app.get("/get_all_databases")
-async def get_all_databases(db: Session = Depends(get_db)):
+async def get_all_databases(db23: Session = Depends(get_db2)):
     query = text("SELECT name FROM sys.databases")
-    results = db.execute(query).fetchall()
+    results = db23.execute(query).fetchall()
     databases = [result[0] for result in results]
     return databases

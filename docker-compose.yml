@@ -15,6 +15,20 @@ services:
     networks:
       - docnetwork
 
+  sql_server2:
+    image: mcr.microsoft.com/mssql/server
+    container_name: sql_server_container2
+    environment:
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
+      ACCEPT_EULA: Y
+      MSSQL_PID: Express
+    ports:
+      - "1434:1433"
+    volumes:
+      - ./db2:/docker-entrypoint-initdb.d/
+    networks:
+      - docnetwork
+
   memcached:
     image: memcached:latest
     container_name: memcached
