@@ -8,10 +8,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 SQL_DB = os.getenv("SQL_DB2")
-SQL_USER = os.getenv("SQL_USER2")
-SQL_PASSWORD = os.getenv("SQL_PASSWORD2")
+SQL_USER = os.getenv("SQL_USER")
+SQL_PASSWORD = os.getenv("SQL_PASSWORD")
 SQL_SERVER = os.getenv("SQL_SERVER2")
-SQL_PORT = os.getenv("SQL_PORT2")
+SQL_PORT = os.getenv("SQL_PORT")
 
 connection_string = (
     f"mssql+pymssql://{SQL_USER}:{SQL_PASSWORD}@{SQL_SERVER}:{SQL_PORT}/{SQL_DB}"
