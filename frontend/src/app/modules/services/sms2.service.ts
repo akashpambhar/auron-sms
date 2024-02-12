@@ -1,15 +1,15 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { ConfigService } from './config.service';
 import { PageSort } from '../models/utils';
+import { ConfigService } from './config.service';
 
 @Injectable({
   providedIn: 'root'
 })
-export class SmsService {
+export class Sms2Service {
 
-  private url = `${this.configService.getEnvConfig().API_URL}/d1/sms`;
+  private url = `${this.configService.getEnvConfig().API_URL}/d2/sms`;
 
   constructor(private http: HttpClient, private configService: ConfigService) { }
 

@@ -4,12 +4,11 @@ import { AuthGuard } from 'app/core/auth/guards/auth.guard';
 import { NoAuthGuard } from 'app/core/auth/guards/noAuth.guard';
 import { LayoutComponent } from 'app/layout/layout.component';
 import { AuthSignInComponent } from './modules/auth/sign-in/sign-in.component';
-import { ExampleComponent } from './modules/admin/example/example.component';
-import { LandingHomeComponent } from './modules/landing/home/home.component';
 import { AuthSignUpComponent } from './modules/auth/sign-up/sign-up.component';
 import { SmsListComponent } from './modules/admin/sms-list/sms-list.component';
 import { AdminDashboardComponent } from './modules/admin/admin-dashboard/admin-dashboard.component';
 import { NoAccessComponent } from './modules/admin/no-access/no-access.component';
+import { SmsList2Component } from './modules/admin/sms-list2/sms-list2.component';
 
 // @formatter:off
 /* eslint-disable max-len */
@@ -56,7 +55,7 @@ export const appRoutes: Route[] = [
     children: [
       { path: 'sign-out', loadChildren: () => import('app/modules/auth/sign-out/sign-out.routes') },
       // { path: 'unlock-session', loadChildren: () => import('app/modules/auth/unlock-session/unlock-session.routes') },
-      { path: 'no-access', component:NoAccessComponent }
+      { path: 'no-access', component: NoAccessComponent }
     ]
   },
 
@@ -114,6 +113,7 @@ export const appRoutes: Route[] = [
     children: [
       // { path: 'example', loadChildren: () => import('app/modules/admin/example/example.routes') }
       { path: 'sms-list', component: SmsListComponent },
+      { path: 'sms-list2', component: SmsList2Component },
       { path: 'admin-dashboard', component: AdminDashboardComponent }
 
     ]

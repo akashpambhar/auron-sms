@@ -1,33 +1,27 @@
-<div class="container">
-    <div class="row">
-        <h1>SMS Detail</h1>
-    </div>
-    <div class="row m-5 border-2 p-5">
-        <h3>MessageID</h3>
-        <p>{{ sms.MessageID }}</p>
-    </div>
-    <div class="row m-5 border-2 p-5">
-        <h3>ToAddress</h3>
-        <p>{{ sms.ToAddress }}</p>
-    </div>
-    <div class="row m-5 border-2 p-5">
-        <h3>Body</h3>
-        <p>{{ sms.Body }}</p>
-    </div>
-    <div class="row m-5 border-2 p-5">
-        <h3>StatusID</h3>
-        <p>{{ sms.StatusID }}</p>
-    </div>
-    <div class="row m-5 border-2 p-5">
-        <h3>SentTime</h3>
-        <p>{{ sms.SentTime }}</p>
-    </div>
-    <div class="row m-5">
-        <button class="fuse-mat-button bg-primary-200" *ngIf="!isLoading" mat-flat-button (click)="exportPDF()">
-            Export PDf
-        </button>
-        <div class="spinner-container">
-            <mat-progress-spinner *ngIf="isLoading" [diameter]="40" [mode]="'indeterminate'"></mat-progress-spinner>
-        </div>
-    </div>
+<div class="container grid grid-cols-12 gap-0">
+	<div class="col-span-12 text-center text-xl font-bold mb-5">SMS Details</div>
+	<div class="col-span-12 my-2 border-b h-0"></div>
+	<div class="col-span-4 self-center text-lg font-medium">MessageID</div>
+	<div class="col-span-8 self-center text-center">{{ sms.MessageID }}</div>
+	<div class="col-span-12 my-2 border-b h-0"></div>
+	<div class="col-span-4 self-center text-lg font-medium">ToAddress</div>
+	<div class="col-span-8 self-center text-center">{{ sms.ToAddress }}</div>
+	<div class="col-span-12 my-2 border-b h-0"></div>
+	<div class="col-span-4 self-center text-lg font-medium">Body</div>
+	<div class="col-span-8 self-center text-center">{{ sms.Body }}</div>
+	<div class="col-span-12 my-2 border-b h-0"></div>
+	<div class="col-span-4 self-center text-lg font-medium">StatusID</div>
+	<div class="col-span-8 self-center text-center">{{ sms.StatusID }}</div>
+	<div class="col-span-12 my-2 border-b h-0"></div>
+	<div class="col-span-4 self-center text-lg font-medium">SentTime</div>
+	<div class="col-span-8 self-center text-center">{{ sms.SentTime }}</div>
+	<div class="col-span-12 my-2 border-b h-0"></div>
+	<div class="col-span-12 my-4 text-center">
+		<button class="fuse-mat-button bg-primary-200" *ngIf="!isLoading" mat-flat-button (click)="exportPDF()">
+			Export PDf
+		</button>
+		<div class="spinner-container">
+			<mat-progress-spinner *ngIf="isLoading" [diameter]="40" [mode]="'indeterminate'"></mat-progress-spinner>
+		</div>
+	</div>
 </div>

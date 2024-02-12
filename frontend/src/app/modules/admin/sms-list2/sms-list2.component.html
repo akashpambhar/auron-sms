@@ -1,0 +1,63 @@
+<div class="flex flex-col flex-auto min-w-0">
+
+  <div class="flex-auto p-6 sm:p-10">
+    <div class="form-container">
+
+      <mat-form-field class="w-full">
+        <mat-label>Search by Mobile Number</mat-label>
+        <input matInput [(ngModel)]="searchTerm" type="number" placeholder="97112345678">
+      </mat-form-field>
+
+      <button class="fuse-mat-button" mat-flat-button [color]="'primary'" (click)="searchSMS()">
+        <span>
+          Search
+        </span>
+      </button>
+
+      <button class="fuse-mat-button bg-accent-300" mat-flat-button (click)="resetFilter()">Reset</button>
+      <button class="fuse-mat-button w-80 bg-primary-200" mat-flat-button (click)="exportExcel()">Export to Excel</button>
+    </div>
+    <div>
+      <table mat-table [dataSource]="smsList" *ngIf="!isLoading">
+
+        <ng-container matColumnDef="MessageID">
+          <th mat-header-cell *matHeaderCellDef> MessageID </th>
+          <td mat-cell *matCellDef="let element"> {{element.MessageID}} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="ToAddress">
+          <th mat-header-cell *matHeaderCellDef> To Address </th>
+          <td mat-cell *matCellDef="let element"> {{element.ToAddress}} </td>
+        </ng-container>
+
+
+        <ng-container matColumnDef="Body">
+          <th mat-header-cell *matHeaderCellDef> Body </th>
+          <td mat-cell *matCellDef="let element"> {{element.Body}} </td>
+        </ng-container>
+
+
+        <ng-container matColumnDef="StatusID">
+          <th mat-header-cell *matHeaderCellDef> Status ID </th>
+          <td mat-cell *matCellDef="let element"> {{element.StatusID}} </td>
+        </ng-container>
+
+
+        <ng-container matColumnDef="SentTime">
+          <th mat-header-cell *matHeaderCellDef> Sent Time </th>
+          <td mat-cell *matCellDef="let element"> {{element.SentTime | date: 'medium'}} </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;" (click)="openDialog(row)"></tr>
+      </table>
+      <div class="spinner-container">
+        <mat-progress-spinner *ngIf="isLoading" [diameter]="40" [mode]="'indeterminate'"></mat-progress-spinner>
+      </div>
+      <mat-paginator [pageSize]="5" [pageSizeOptions]="[5, 10, 25, 100]" (page)="nextPage($event)"
+        aria-label="Select page">
+      </mat-paginator>
+
+    </div>
+  </div>
+</div>

@@ -65,6 +65,14 @@ export class ClassyLayoutComponent implements OnInit, OnDestroy {
         link: '/sms-list',
         hidden: () => !(this.user.role == 1 || this.user.role == 2 || this.user.role == 3)
       },
+      {
+        id: 'sms-list2',
+        title: 'SMS List 2',
+        type: 'basic',
+        icon: 'heroicons_outline:table-cells',
+        link: '/sms-list2',
+        hidden: () => !(this.user.role == 1 || this.user.role == 2 || this.user.role == 3)
+      },
     ];
     this.compactNavigation = [
       {
@@ -120,16 +128,6 @@ export class ClassyLayoutComponent implements OnInit, OnDestroy {
       .subscribe((navigation: Navigation) => {
         this.navigation = { default: this.defaultNavigation, compact: this.compactNavigation, futuristic: this.futuristicNavigation, horizontal: this.horizontalNavigation };
       });
-
-    // this.navigation.default = [
-    //     {
-    //         id   : 'sms-list',
-    //         title: 'SMS List',
-    //         type : 'basic',
-    //         icon : 'heroicons_outline:chart-pie',
-    //         link : '/sms-list'
-    //     }
-    // ];
 
     // Subscribe to the user service
     this._userService.user$
