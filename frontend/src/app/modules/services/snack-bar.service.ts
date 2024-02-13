@@ -8,8 +8,10 @@ export class SnackBarService {
 
   constructor(private snackBar: MatSnackBar) { }
 
-  public showSnackbar(message: string, action: string = 'Close', duration: number = 10000): void {
-    this.snackBar.open(message, action, {
+  public showSnackbar(message: string, action: string = 'Close', duration: number = 10000, maxLength: number = 200): void {
+    const truncatedMessage = message.length > maxLength ? message.substring(0, maxLength) + '...' : message;
+
+    this.snackBar.open(truncatedMessage, action, {
       duration: duration,
     });
   }
