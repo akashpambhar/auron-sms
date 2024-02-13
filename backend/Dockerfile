@@ -6,24 +6,16 @@ WORKDIR /app
 
 # Copy the current directory contents into the container at /app
 COPY backend/. /app
-# COPY ./requirements.txt /app
 
 # Add custom font file to the Docker image
 COPY backend/lib/. /usr/local/lib/python3.10/site-packages/pyreportjasper/libs/
 
-# Update package lists and install Java 17
-RUN apt-get update && \
-    apt-get install -y openjdk-17-jdk && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/ && \
-    rm -rf /var/cache/oracle-jdk17-installer;
-    
-ENV JAVA_HOME /usr/lib/jvm/java-17-openjdk-amd64/
-ENV PATH $JAVA_HOME/bin:$PATH
+ENV JAVA_HOME=/opt/java/openjdk
+COPY --from=eclipse-temurin:17-jre $JAVA_HOME $JAVA_HOME
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
-# RUN /app/env/Scripts/activate && pip install --no-cache-dir -r requirements.txt
 
 # Make port 8000 available to the world outside this container
 EXPOSE 8000

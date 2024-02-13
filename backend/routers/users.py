@@ -82,9 +82,13 @@ async def get_user_by_user_username(
         WHERE [user].username LIKE '%"""
         + username
         + """%\'"""
+        + f"""
+        AND [user].username != :username
+        AND [user].role_id != 1 
+        """
     )
 
-    results = db.execute(native_sql_query).fetchall()
+    results = db.execute(native_sql_query, {"username": username}).fetchall()
 
     users = []
 
@@ -171,8 +175,6 @@ async def delete_user_by_user_id(
     existing_user = db.execute(
         select(User.User).where(User.User.user_id == user_id)
     ).first()[0]
-
-    print(existing_user)
 
     if existing_user is None:
         raise HTTPException(
