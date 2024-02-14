@@ -1,29 +1,30 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MatInputModule } from '@angular/material/input';
-import { MatPaginator, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { FormsModule, ReactiveFormsModule, FormBuilder } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { SmsService } from 'app/modules/services/sms.service';
-import { PageSort } from 'app/modules/models/utils';
 import { MatDialog } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatPaginatorModule, MatPaginator, PageEvent } from '@angular/material/paginator';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTableModule, MatTableDataSource } from '@angular/material/table';
+import { PageSort } from 'app/modules/models/utils';
+import { SnackBarService } from 'app/modules/services/snack-bar.service';
 import { SmsDetailComponent } from '../sms-detail/sms-detail.component';
 import { saveAs } from 'file-saver';
-import { SnackBarService } from 'app/modules/services/snack-bar.service';
+import { Sms3Service } from 'app/modules/services/sms3.service';
 
 @Component({
-  selector: 'app-sms-list',
+  selector: 'app-sms-list3',
   standalone: true,
   imports: [CommonModule, MatTableModule, MatFormFieldModule, FormsModule, MatInputModule,
     MatPaginatorModule, MatProgressSpinnerModule, MatButtonModule, ReactiveFormsModule, MatDatepickerModule],
-  templateUrl: './sms-list.component.html',
-  styleUrl: './sms-list.component.scss'
+  templateUrl: './sms-list3.component.html',
+  styleUrl: './sms-list3.component.scss'
 })
-export class SmsListComponent implements OnInit {
+export class SmsList3Component {
+
   displayedColumns: string[] = ['MessageID', 'ToAddress', 'Body', 'StatusID', 'SentTime'];
   smsList = new MatTableDataSource<any>();
 
@@ -45,7 +46,7 @@ export class SmsListComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
-    private smsService: SmsService,
+    private smsService: Sms3Service,
     public dialog: MatDialog,
     private snackBarService: SnackBarService
   ) { }
@@ -94,7 +95,7 @@ export class SmsListComponent implements OnInit {
     })
   }
 
-  exportExcel(){
+  exportExcel() {
     this.smsService.exportExcel(this.smsList).subscribe((data => {
       this.handleFileDownload(data);
     }))
@@ -133,10 +134,9 @@ export class SmsListComponent implements OnInit {
       this.loadSMS();
   }
 
-  openDialog(data:any) {
+  openDialog(data: any) {
     this.dialog.open(SmsDetailComponent, {
       data: data
     })
   }
-
 }

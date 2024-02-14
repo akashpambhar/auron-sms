@@ -73,6 +73,14 @@ export class ClassyLayoutComponent implements OnInit, OnDestroy {
         link: '/sms-list2',
         hidden: () => !(this.user.role == 1 || this.user.role == 2 || this.user.role == 3)
       },
+      {
+        id: 'sms-list3',
+        title: 'SMS List 3',
+        type: 'basic',
+        icon: 'heroicons_outline:table-cells',
+        link: '/sms-list3',
+        hidden: () => !(this.user.role == 1 || this.user.role == 2 || this.user.role == 3)
+      },
     ];
     this.compactNavigation = [
       {

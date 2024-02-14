@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from pymemcache.client import base
 from database import engine, SessionLocal, Base
 from database2 import SessionLocal as sl
-from routers import auth, sms, sms2, users
+from routers import auth, sms, sms2, sms3, users
 from schemas import UserSchema
 
 Base.metadata.create_all(bind=engine)
@@ -33,6 +33,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(sms.router)
 app.include_router(sms2.router)
+app.include_router(sms3.router)
 app.include_router(users.router)
 
 oauth2_scheme = auth.get_auth_scheme()

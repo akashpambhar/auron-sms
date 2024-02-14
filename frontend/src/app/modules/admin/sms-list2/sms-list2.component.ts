@@ -24,6 +24,7 @@ import { SnackBarService } from 'app/modules/services/snack-bar.service';
   styleUrl: './sms-list2.component.scss'
 })
 export class SmsList2Component {
+  
   displayedColumns: string[] = ['MessageID', 'ToAddress', 'Body', 'StatusID', 'SentTime'];
   smsList = new MatTableDataSource<any>();
 
@@ -134,7 +135,7 @@ export class SmsList2Component {
   }
 
   openDialog(data: any) {
-    const dialogRef = this.dialog.open(SmsDetailComponent, {
+    this.dialog.open(SmsDetailComponent, {
       data: data
     })
   }
