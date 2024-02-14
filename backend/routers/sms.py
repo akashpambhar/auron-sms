@@ -70,7 +70,7 @@ USE [?]
                 ''SELECT MessageID, ToAddress, Body, StatusID, SentTime '' +
                 ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a '' +
                 ''INNER JOIN '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + ''_Sms b '' +
-                ''ON a.OriginalID = b.MessageID '' +''WHERE a.SentTime BETWEEN DATEADD(HOUR, -1, GETDATE()) AND GETDATE();''
+                ''ON a.OriginalID = b.MessageID '' +''WHERE a.SentTime BETWEEN DATEADD(HOUR, -5, GETDATE()) AND GETDATE();''
 
             EXEC sp_executesql @sql_query
         END
@@ -81,7 +81,7 @@ USE [?]
                 ''SELECT MessageID, ToAddress, Body, StatusID, SentTime '' +
                 ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a '' +
                 ''INNER JOIN '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + ''_Sms b '' +
-                ''ON a.id = b.MessageID '' + ''WHERE a.SentTime BETWEEN DATEADD(HOUR, -1, GETDATE()) AND GETDATE();''
+                ''ON a.id = b.MessageID '' + ''WHERE a.SentTime BETWEEN DATEADD(HOUR, -5, GETDATE()) AND GETDATE();''
 
             EXEC sp_executesql @sql_query
         END
@@ -170,7 +170,7 @@ BEGIN
     ELSE
         BEGIN
             SET @sql_query = 
-                ''INSERT INTO #TempResults_""" + random_number + """ (ToAddress, SentTime, Body, StatusID) '' +
+                ''INSERT INTO #TempResults_""" + random_number + """ (MessageID, ToAddress, SentTime, Body, StatusID) '' +
                 ''SELECT MessageID, ToAddress, SentTime, Body, StatusID '' +
                 ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a '' +
                 ''INNER JOIN '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + ''_Sms b '' +

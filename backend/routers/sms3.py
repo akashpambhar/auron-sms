@@ -14,7 +14,7 @@ from routers import auth
 from typing import Annotated
 from schemas import UserSchema
 
-router = APIRouter(prefix="/d2/sms", tags=["sms2"])
+router = APIRouter(prefix="/d3/sms", tags=["sms3"])
 
 
 def get_db():
