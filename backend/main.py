@@ -3,14 +3,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Annotated
-import json
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from pymemcache.client import base
-from database import engine, SessionLocal, Base
+from database import engine, Base
 from database2 import SessionLocal as sl
 from routers import auth, sms, sms2, sms3, users
 from schemas import UserSchema
@@ -39,13 +38,6 @@ app.include_router(users.router)
 oauth2_scheme = auth.get_auth_scheme()
 
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
 def get_db2():
     db2 = sl()
     try:
@@ -54,45 +46,14 @@ def get_db2():
         db2.close()
 
 
-# def load_dbs(refresh: bool = False):
-#     # Check if the result is already cached
-#     result = mc.get("database_list")
-#     if result is not None and not refresh:
-#         return
-#     with Session(autocommit=False, autoflush=False, bind=engine) as db:
-#         query = text("SELECT name FROM sys.databases")
-#         results = db.execute(query).fetchall()
-#         databases = [result[0] for result in results]
-#         json_dbs = json.dumps(databases, default=str)
-#         # Cache the result
-#         mc.set("database_list", json_dbs)
-
-
-# load_dbs()
-
-
-def get_dbs():
-    dbs = mc.get("database_list")
-    # convert statuses to dict
-    dbs = json.loads(dbs)
-    return dbs
-
-
 @app.get("/")
-async def hello_world(
-    current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_user)]
-):
+async def hello_world():
     return {"message": "Hello World"}
 
 
-@app.get("/get_all_databases_cached")
-async def get_all_databases_chached():
-    return get_dbs()
-
-
 @app.get("/get_all_databases")
-async def get_all_databases(db23: Session = Depends(get_db2)):
+async def get_all_databases(db: Session = Depends(get_db2)):
     query = text("SELECT name FROM sys.databases")
-    results = db23.execute(query).fetchall()
+    results = db.execute(query).fetchall()
     databases = [result[0] for result in results]
     return databases

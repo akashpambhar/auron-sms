@@ -48,8 +48,6 @@ export class UserUpdateComponent implements OnInit{
 
   loadUser() {
     this.userService.getById(this.data.userId).subscribe((user: any) => {
-      console.log(user.username);
-      
       this.userForm.patchValue({
         username: user.username,
         password: '',

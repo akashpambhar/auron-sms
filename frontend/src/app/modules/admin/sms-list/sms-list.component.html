@@ -27,7 +27,8 @@
       </button>
 
       <button class="fuse-mat-button bg-accent-300" mat-flat-button (click)="resetFilter()">Reset</button>
-      <button class="fuse-mat-button w-80 bg-primary-200" mat-flat-button (click)="exportExcel()">Export to Excel</button>
+      <button class="fuse-mat-button w-80 bg-primary-200" mat-flat-button (click)="exportExcel()">Export to
+        Excel</button>
     </div>
     <div>
       <table mat-table [dataSource]="smsList" *ngIf="!isLoading">
@@ -66,8 +67,7 @@
       <div class="spinner-container">
         <mat-progress-spinner *ngIf="isLoading" [diameter]="40" [mode]="'indeterminate'"></mat-progress-spinner>
       </div>
-      <mat-paginator [pageSize]="5" [pageSizeOptions]="[5, 10, 25, 100]" (page)="nextPage($event)"
-        aria-label="Select page">
+      <mat-paginator [pageSize]="5" [pageSizeOptions]="[5, 10, 25, 100]" aria-label="Select page">
       </mat-paginator>
 
     </div>

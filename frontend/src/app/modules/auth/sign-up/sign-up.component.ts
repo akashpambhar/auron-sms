@@ -57,8 +57,6 @@ export class AuthSignUpComponent implements OnInit {
 
         this._authService.signUp(this.signUpForm.value).subscribe({
             next: (response: any) => {
-                console.log(response);
-
                 this._router.navigateByUrl('/sign-in');
             },
             error: (error: any) => {

@@ -53,17 +53,18 @@ export class SmsListComponent implements OnInit {
   @ViewChild(MatPaginator) paginator!: MatPaginator;
 
   ngOnInit(): void {
-    this.loadSMS()
+    this.loadSMS();
+  }
+  
+  ngAfterViewInit(){
+    this.smsList.paginator = this.paginator;
   }
 
   loadSMS() {
     this.isLoading = true;
     this.smsService.getAllSMS(this.pageAndSort).subscribe({
       next: (data) => {
-        this.smsList = data.items;
-        this.paginator.length = data.total;
-        this.paginator.pageIndex = data.paginator.page - 1;
-        this.pageAndSort.page = data.paginator.page - 1;
+        this.smsList.data = data.items;
         this.isLoading = false;
       },
       error: (error) => {
@@ -81,10 +82,7 @@ export class SmsListComponent implements OnInit {
 
     this.smsService.searchAllSMSByMobileNumber(this.searchTerm, this.pageAndSort).subscribe({
       next: (data) => {
-        this.smsList = data.items;
-        this.paginator.length = data.total;
-        this.paginator.pageIndex = data.paginator.page - 1;
-        this.pageAndSort.page = data.paginator.page - 1;
+        this.smsList.data = data.items;
         this.isLoading = false;
       },
       error: (error) => {
@@ -121,16 +119,6 @@ export class SmsListComponent implements OnInit {
         direction: "desc"
       }
     };
-  }
-
-  nextPage(event: PageEvent) {
-    this.pageAndSort.page = event.pageIndex;
-    this.pageAndSort.size = event.pageSize;
-
-    if (this.searchTerm)
-      this.searchSMS();
-    else
-      this.loadSMS();
   }
 
   openDialog(data:any) {
