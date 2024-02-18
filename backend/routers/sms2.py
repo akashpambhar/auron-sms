@@ -25,7 +25,7 @@ def get_db():
         db.close()
 
 
-@router.get("/")
+@router.get("")
 async def get_all_sms(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_and_normal_user)],
     pagination: PaginationParams.PaginationParams = Depends(),

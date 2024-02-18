@@ -5,7 +5,7 @@
 
       <mat-form-field class="w-full">
         <mat-label>Search by Mobile Number</mat-label>
-        <input matInput [(ngModel)]="searchTerm" type="number" placeholder="97112345678">
+        <input matInput [(ngModel)]="searchTerm" type="number" placeholder="97112345678" (keydown.enter)="searchSMS()">
       </mat-form-field>
 
       <!-- <mat-form-field class="w-full">

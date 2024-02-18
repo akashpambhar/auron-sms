@@ -41,8 +41,7 @@ CREATE TABLE #TempResults_""" + random_number + """ (
     ToAddress NVARCHAR(32),
     Body NVARCHAR(MAX),
     StatusID NVARCHAR(32),
-	SentTime DATETIME2(7),
-    TotalCount BIGINT
+	SentTime DATETIME2(7)
 )
 
 SELECT @command = '
@@ -166,7 +165,7 @@ def set_cached_result_to_json(results, current_active_user):
 
 cache_get_all_sms()
 
-@router.get("/")
+@router.get("")
 async def get_all_sms(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_and_normal_user)],
 ):
@@ -193,8 +192,7 @@ CREATE TABLE #TempResults_""" + random_number + """ (
     ToAddress NVARCHAR(32),
     Body NVARCHAR(MAX),
     StatusID NVARCHAR(32),
-    SentTime DATETIME2(7),
-    TotalCount BIGINT
+    SentTime DATETIME2(7)
 )
 
 SELECT @command = '

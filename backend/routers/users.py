@@ -26,7 +26,7 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
-@router.get("/")
+@router.get("")
 async def get_users(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_user)],
     db: Annotated[Session, Depends(get_db)]
@@ -108,7 +108,7 @@ async def get_user_by_user_username(
     return users
 
 
-@router.post("/")
+@router.post("")
 async def add_user(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_user)],
     user_create: UserSchema.UserCreate, db: Annotated[Session, Depends(get_db)]
@@ -142,7 +142,7 @@ async def add_user(
         )
 
 
-@router.put("/")
+@router.put("")
 async def edit_user(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_user)],
     user_edit: UserSchema.UserInDB, db: Annotated[Session, Depends(get_db)]

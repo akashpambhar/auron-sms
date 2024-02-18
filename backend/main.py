@@ -5,14 +5,12 @@ load_dotenv()
 
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Annotated
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from pymemcache.client import base
 from database import engine, Base
 from database2 import SessionLocal as sl
 from routers import auth, sms, sms2, sms3, users
-from schemas import UserSchema
 
 Base.metadata.create_all(bind=engine)
 
@@ -46,9 +44,9 @@ def get_db2():
         db2.close()
 
 
-@app.get("/")
-async def hello_world():
-    return {"message": "Hello World"}
+@app.get("")
+async def server_health():
+    return {"message": "Server is running"}
 
 
 @app.get("/get_all_databases")

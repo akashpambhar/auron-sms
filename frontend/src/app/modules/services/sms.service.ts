@@ -34,9 +34,7 @@ export class SmsService {
       sort_order: pageAndSort.sort.direction
     }
 
-    return this.http.get<any>(`${this.url}/phone/${mobileNumber}`, {
-      params: params
-    });
+    return this.http.get<any>(`${this.url}/phone/${mobileNumber}`);
   }
 
   exportExcel(smsList : any): Observable<any> {

@@ -3,7 +3,7 @@ import re
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from database2 import SessionLocal
+from database3 import SessionLocal
 from utils import PaginationParams
 import random
 import xlsxwriter
@@ -25,7 +25,7 @@ def get_db():
         db.close()
 
 
-@router.get("/")
+@router.get("")
 async def get_all_sms(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_and_normal_user)],
     pagination: PaginationParams.PaginationParams = Depends(),
