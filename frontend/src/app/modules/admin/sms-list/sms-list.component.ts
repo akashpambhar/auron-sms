@@ -82,6 +82,9 @@ export class SmsListComponent implements OnInit {
 
     this.smsService.searchAllSMSByMobileNumber(this.searchTerm, this.pageAndSort).subscribe({
       next: (data) => {
+        console.log("DATA RECEIVED");
+        console.log(data);
+        
         this.smsList.data = data.items;
         this.isLoading = false;
       },

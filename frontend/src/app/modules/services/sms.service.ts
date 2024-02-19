@@ -21,9 +21,7 @@ export class SmsService {
       sort_order: pageAndSort.sort.direction
     }
 
-    return this.http.get<any>(`${this.url}`, {
-      params: params
-    });
+    return this.http.get<any>(`${this.url}`);
   }
 
   searchAllSMSByMobileNumber(mobileNumber: string, pageAndSort: PageSort): Observable<any> {
