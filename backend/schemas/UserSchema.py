@@ -9,7 +9,7 @@ class UserBase(BaseModel):
     role_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class User(UserBase):

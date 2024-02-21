@@ -64,7 +64,7 @@ USE [?]
             SET @sql_query = 
                 ''INSERT INTO #TempResults_""" + random_number + """ (MessageID, ToAddress, Body, StatusID, SentTime) '' +
                 ''SELECT MessageID, ToAddress, Body, StatusID, SentTime '' +
-                ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a '' +
+                ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a WITH (NOLOCK)'' +
                 ''INNER JOIN '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + ''_Sms b '' +
                 ''ON a.OriginalID = b.MessageID '' + ''WHERE a.SentTime BETWEEN DATEADD(HOUR, -5, GETDATE()) AND GETDATE();''
 
@@ -75,7 +75,7 @@ USE [?]
             SET @sql_query = 
                 ''INSERT INTO #TempResults_""" + random_number + """ (MessageID, ToAddress, Body, StatusID, SentTime) '' +
                 ''SELECT MessageID, ToAddress, Body, StatusID, SentTime '' +
-                ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a '' +
+                ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a WITH (NOLOCK)'' +
                 ''INNER JOIN '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + ''_Sms b '' +
                 ''ON a.id = b.MessageID '' + ''WHERE a.SentTime BETWEEN DATEADD(HOUR, -5, GETDATE()) AND GETDATE();''
 
@@ -166,7 +166,7 @@ def set_cached_result_to_json(results, current_active_user):
 cache_get_all_sms()
 
 @router.get("")
-async def get_all_sms(
+def get_all_sms(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_and_normal_user)],
 ):
     messages = mc.get("message_list1")
@@ -176,7 +176,7 @@ async def get_all_sms(
 
 
 @router.get("/phone/{mobile_number}")
-async def get_all_sms_by_phone_number(
+def get_all_sms_by_phone_number(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_and_normal_user)],
     mobile_number: str,
     db: Session = Depends(get_db)
@@ -215,7 +215,7 @@ BEGIN
             SET @sql_query = 
                 ''INSERT INTO #TempResults_""" + random_number + """ (MessageID, ToAddress, SentTime, Body, StatusID) '' +
                 ''SELECT MessageID, ToAddress, SentTime, Body, StatusID '' +
-                ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a '' +
+                ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a WITH (NOLOCK)'' +
                 ''INNER JOIN '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + ''_Sms b '' +
                 ''ON a.OriginalID = b.MessageID '' +
                 ''WHERE b.ToAddress LIKE ''''"""+"""%"""+mobile_number+"""%"""+"""'''';''
@@ -227,7 +227,7 @@ BEGIN
             SET @sql_query = 
                 ''INSERT INTO #TempResults_""" + random_number + """ (MessageID, ToAddress, SentTime, Body, StatusID) '' +
                 ''SELECT MessageID, ToAddress, SentTime, Body, StatusID '' +
-                ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a '' +
+                ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a WITH (NOLOCK)'' +
                 ''INNER JOIN '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + ''_Sms b '' +
                 ''ON a.id = b.MessageID '' +
                 ''WHERE b.ToAddress LIKE ''''"""+"""%"""+mobile_number+"""%"""+"""'''';''
@@ -253,7 +253,7 @@ DROP TABLE #TempResults_""" + random_number + """
 
 
 @router.post("/file/excel")
-async def get_excel_file(
+def get_excel_file(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_and_normal_user)],
     sms_list: list[dict],
 ):
@@ -297,7 +297,7 @@ def create_excel_file(sms_list):
 
 
 @router.post("/file/pdf")
-async def export_pdf(
+def export_pdf(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_and_normal_user)],
     content: dict
 ):

@@ -45,12 +45,12 @@ def get_db2():
 
 
 @app.get("")
-async def server_health():
+def server_health():
     return {"message": "Server is running"}
 
 
 @app.get("/get_all_databases")
-async def get_all_databases(db: Session = Depends(get_db2)):
+def get_all_databases(db: Session = Depends(get_db2)):
     query = text("SELECT name FROM sys.databases")
     results = db.execute(query).fetchall()
     databases = [result[0] for result in results]

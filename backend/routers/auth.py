@@ -36,7 +36,7 @@ def get_db():
 
 
 @router.post("/signin")
-async def login_for_access_token(
+def login_for_access_token(
     user_signin: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Annotated[Session, Depends(get_db)],
 ) -> TokenSchema.Token:
@@ -55,7 +55,7 @@ async def login_for_access_token(
 
 
 @router.post("/signup")
-async def signup(userSignup: UserSchema.UserSignUp, db: Session = Depends(get_db)):
+def signup(userSignup: UserSchema.UserSignUp, db: Session = Depends(get_db)):
     existing_user = db.execute(
         select(User.User).where(
             (User.User.username == userSignup.username)
@@ -121,7 +121,7 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
     return encoded_jwt
 
 
-async def get_current_user(
+def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
     db: Annotated[Session, Depends(get_db)],
 ):
@@ -144,7 +144,7 @@ async def get_current_user(
     return user
 
 
-async def get_current_active_user(
+def get_current_active_user(
     current_user: Annotated[UserSchema.User, Depends(get_current_user)]
 ):
     if current_user.disabled:
@@ -152,7 +152,7 @@ async def get_current_active_user(
     return current_user
 
 
-async def get_current_admin_user(
+def get_current_admin_user(
     current_user: Annotated[UserSchema.User, Depends(get_current_active_user)]
 ):
     if 1 != current_user.role_id or current_user.disabled is None or current_user.disabled == True:
@@ -163,7 +163,7 @@ async def get_current_admin_user(
     return current_user
 
 
-async def get_current_normal_user(
+def get_current_normal_user(
     current_user: Annotated[UserSchema.User, Depends(get_current_active_user)]
 ):
     if 2 != current_user.role_id or current_user.disabled is None or current_user.disabled == True:
@@ -174,7 +174,7 @@ async def get_current_normal_user(
     return current_user
 
 
-async def get_current_other_user(
+def get_current_other_user(
     current_user: Annotated[UserSchema.User, Depends(get_current_active_user)]
 ):
     if 3 != current_user.role_id or current_user.disabled is None or current_user.disabled == True:
@@ -184,7 +184,7 @@ async def get_current_other_user(
         )
     return current_user
 
-async def get_current_admin_and_normal_user(
+def get_current_admin_and_normal_user(
     current_user: Annotated[UserSchema.User, Depends(get_current_active_user)]
 ):
     if current_user.role_id not in [1,2] or current_user.disabled is None or current_user.disabled == True:
@@ -210,7 +210,7 @@ def authenticate_user(username: str, password: str, db: Session):
 
 
 @router.get("/me")
-async def read_users_me(
+def read_users_me(
     current_active_user: Annotated[UserSchema.User, Depends(get_current_active_user)]
 ):
     return current_active_user

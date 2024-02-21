@@ -27,7 +27,7 @@ def get_password_hash(password):
 
 
 @router.get("")
-async def get_users(
+def get_users(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_user)],
     db: Annotated[Session, Depends(get_db)]
 ):
@@ -52,7 +52,7 @@ async def get_users(
 
 
 @router.get("/{user_id}")
-async def get_user_by_user_id(
+def get_user_by_user_id(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_user)],
     user_id: str, db: Annotated[Session, Depends(get_db)]
 ):
@@ -70,7 +70,7 @@ async def get_user_by_user_id(
 
 
 @router.get("/search/{username}")
-async def get_user_by_user_username(
+def get_user_by_user_username(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_user)],
     username: str, db: Annotated[Session, Depends(get_db)]
 ):
@@ -109,7 +109,7 @@ async def get_user_by_user_username(
 
 
 @router.post("")
-async def add_user(
+def add_user(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_user)],
     user_create: UserSchema.UserCreate, db: Annotated[Session, Depends(get_db)]
 ):
@@ -143,7 +143,7 @@ async def add_user(
 
 
 @router.put("")
-async def edit_user(
+def edit_user(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_user)],
     user_edit: UserSchema.UserInDB, db: Annotated[Session, Depends(get_db)]
 ):
@@ -168,7 +168,7 @@ async def edit_user(
 
 
 @router.delete("/{user_id}")
-async def delete_user_by_user_id(
+def delete_user_by_user_id(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_user)],
     user_id: str, db: Annotated[Session, Depends(get_db)]
 ):

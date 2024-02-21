@@ -26,7 +26,7 @@ def get_db():
 
 
 @router.get("")
-async def get_all_sms(
+def get_all_sms(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_and_normal_user)],
     pagination: PaginationParams.PaginationParams = Depends(),
     db: Session = Depends(get_db),
@@ -117,7 +117,7 @@ DROP TABLE #TempResults_""" + random_number + """
 
 
 @router.get("/phone/{mobile_number}")
-async def get_all_sms_by_phone_number(
+def get_all_sms_by_phone_number(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_and_normal_user)],
     mobile_number: str, 
     pagination: PaginationParams.PaginationParams = Depends(),
@@ -213,7 +213,7 @@ DROP TABLE #TempResults_""" + random_number + """
 
 
 @router.post("/file/excel")
-async def get_excel_file(
+def get_excel_file(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_and_normal_user)],
     sms_list: list[dict],
 ):
@@ -257,7 +257,7 @@ def create_excel_file(sms_list):
 
 
 @router.post("/file/pdf")
-async def export_pdf(
+def export_pdf(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_and_normal_user)],
     content: dict
 ):
