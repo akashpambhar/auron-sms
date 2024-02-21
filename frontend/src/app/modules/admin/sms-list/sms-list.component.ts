@@ -14,12 +14,13 @@ import { MatDialog } from '@angular/material/dialog';
 import { SmsDetailComponent } from '../sms-detail/sms-detail.component';
 import { saveAs } from 'file-saver';
 import { SnackBarService } from 'app/modules/services/snack-bar.service';
+import { MatSort, MatSortModule } from '@angular/material/sort';
 
 @Component({
   selector: 'app-sms-list',
   standalone: true,
   imports: [CommonModule, MatTableModule, MatFormFieldModule, FormsModule, MatInputModule,
-    MatPaginatorModule, MatProgressSpinnerModule, MatButtonModule, ReactiveFormsModule, MatDatepickerModule],
+    MatPaginatorModule, MatProgressSpinnerModule, MatButtonModule, ReactiveFormsModule, MatDatepickerModule, MatSortModule],
   templateUrl: './sms-list.component.html',
   styleUrl: './sms-list.component.scss'
 })
@@ -51,6 +52,7 @@ export class SmsListComponent implements OnInit {
   ) { }
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
+  @ViewChild(MatSort) sort: MatSort;
 
   ngOnInit(): void {
     this.loadSMS();
@@ -58,11 +60,12 @@ export class SmsListComponent implements OnInit {
   
   ngAfterViewInit(){
     this.smsList.paginator = this.paginator;
+    this.smsList.sort = this.sort;
   }
 
   loadSMS() {
     this.isLoading = true;
-    this.smsService.getAllSMS(this.pageAndSort).subscribe({
+    this.smsService.getAllSMS().subscribe({
       next: (data) => {
         this.smsList.data = data.items;
         this.isLoading = false;
@@ -80,9 +83,9 @@ export class SmsListComponent implements OnInit {
   searchSMS() {
     this.isLoading = true;
 
-    this.smsService.searchAllSMSByMobileNumber(this.searchTerm, this.pageAndSort).subscribe({
+    this.smsService.searchAllSMSByMobileNumber(this.searchTerm).subscribe({
       next: (data) => {
-        console.log("DATA RECEIVED");
+        console.log("DATA RECEIVED1");
         console.log(data);
         
         this.smsList.data = data.items;
@@ -96,7 +99,7 @@ export class SmsListComponent implements OnInit {
   }
 
   exportExcel(){
-    this.smsService.exportExcel(this.smsList).subscribe((data => {
+    this.smsService.exportExcel(this.smsList.sortData(this.smsList.data, this.sort)).subscribe((data => {
       this.handleFileDownload(data);
     }))
   }

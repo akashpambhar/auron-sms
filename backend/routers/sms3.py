@@ -3,8 +3,8 @@ import re
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+from pymemcache.client import base
 from database3 import SessionLocal
-from utils import PaginationParams
 import random
 import xlsxwriter
 from fastapi.responses import FileResponse
@@ -12,10 +12,12 @@ from pyreportjasper import PyReportJasper
 import os
 from routers import auth
 from typing import Annotated
-from schemas import UserSchema
+from schemas import UserSchema, RoleSchema
+import json
 
 router = APIRouter(prefix="/d3/sms", tags=["sms3"])
 
+mc = base.Client((os.getenv("MC_SERVER"), 11211))
 
 def get_db():
     db = SessionLocal()
@@ -24,17 +26,12 @@ def get_db():
     finally:
         db.close()
 
-
-@router.get("")
-def get_all_sms(
-    current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_and_normal_user)],
-    pagination: PaginationParams.PaginationParams = Depends(),
-    db: Session = Depends(get_db),
+def cache_get_all_sms(
+    db: Session = next(get_db())
 ):
     random_number = str(random.randint(1, 10000000))
 
     try:
-
         query = text(
             """
 DECLARE @command NVARCHAR(MAX)
@@ -44,8 +41,7 @@ CREATE TABLE #TempResults_""" + random_number + """ (
     ToAddress NVARCHAR(32),
     Body NVARCHAR(MAX),
     StatusID NVARCHAR(32),
-	SentTime DATETIME2(7),
-    TotalCount BIGINT
+	SentTime DATETIME2(7)
 )
 
 SELECT @command = '
@@ -68,9 +64,9 @@ USE [?]
             SET @sql_query = 
                 ''INSERT INTO #TempResults_""" + random_number + """ (MessageID, ToAddress, Body, StatusID, SentTime) '' +
                 ''SELECT MessageID, ToAddress, Body, StatusID, SentTime '' +
-                ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a '' +
+                ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a WITH (NOLOCK)'' +
                 ''INNER JOIN '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + ''_Sms b '' +
-                ''ON a.OriginalID = b.MessageID '' +''WHERE a.SentTime BETWEEN DATEADD(HOUR, -5, GETDATE()) AND GETDATE();''
+                ''ON a.OriginalID = b.MessageID '' + ''WHERE a.SentTime BETWEEN DATEADD(HOUR, -5, GETDATE()) AND GETDATE();''
 
             EXEC sp_executesql @sql_query
         END
@@ -79,7 +75,7 @@ USE [?]
             SET @sql_query = 
                 ''INSERT INTO #TempResults_""" + random_number + """ (MessageID, ToAddress, Body, StatusID, SentTime) '' +
                 ''SELECT MessageID, ToAddress, Body, StatusID, SentTime '' +
-                ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a '' +
+                ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a WITH (NOLOCK)'' +
                 ''INNER JOIN '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + ''_Sms b '' +
                 ''ON a.id = b.MessageID '' + ''WHERE a.SentTime BETWEEN DATEADD(HOUR, -5, GETDATE()) AND GETDATE();''
 
@@ -89,44 +85,104 @@ END'
 
 EXEC sp_MSforeachdb @command
 
-DECLARE @TotalCount BIGINT;
-SET @TotalCount = (SELECT COUNT(*) FROM #TempResults_""" + random_number + """);
-
-SELECT *, @TotalCount As TotalCount FROM #TempResults_""" + random_number + """
-ORDER BY """
-+ pagination.sort_by
-+ " "
-+ pagination.sort_order
-+ """
-OFFSET """
-+ str((pagination.page - 1) * pagination.page_size)
-+ """ ROWS
-FETCH NEXT """
-+ str(pagination.page_size)
-+ """ ROWS ONLY
+SELECT TOP 2000 * FROM #TempResults_""" + random_number + """
     
 DROP TABLE #TempResults_""" + random_number + """
         """
         )
+        
         results = db.execute(query).fetchall()
-        return set_db_result_to_json(results, current_user, pagination)
+        json_messages = json.dumps(set_db_result_to_json(results, RoleSchema.Role(role_id=1, role_name='admin')), default=str)
+        mc.set("message_list3", json_messages)
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error executing SQL query: {str(e)}"
         )
 
+def set_db_result_to_json(results, current_active_user):
+    messages = {
+        "items": []
+    }
+
+    if results != []:
+        if(current_active_user.role_id == 1):
+            messages["items"] = [
+                {
+                    "MessageID": result[0],
+                    "ToAddress": result[1],
+                    "Body": result[2],
+                    "StatusID": result[3],
+                    "SentTime": result[4]
+                }
+                for result in results
+            ]   
+        else :
+            messages["items"] = [
+                {
+                    "MessageID": result[0],
+                    "ToAddress": result[1],
+                    "Body": re.sub(r"\d", "*", result[2]),
+                    "StatusID": result[3],
+                    "SentTime": result[4]
+                }
+                for result in results
+            ]
+
+    return messages
+
+
+def set_cached_result_to_json(results, current_active_user):
+    messages = {
+        "items": []
+    }
+
+    if results != []:
+        if(current_active_user.role_id == 1):
+            messages["items"] = [
+                {
+                    "MessageID": result["MessageID"],
+                    "ToAddress": result["ToAddress"],
+                    "Body": result["Body"],
+                    "StatusID": result["StatusID"],
+                    "SentTime": result["SentTime"]
+                }
+                for result in results
+            ]
+        else :
+            messages["items"] = [
+                {
+                    "MessageID": result["MessageID"],
+                    "ToAddress": result["ToAddress"],
+                    "Body": re.sub(r"\d", "*", result["Body"]),
+                    "StatusID": result["StatusID"],
+                    "SentTime": result["SentTime"]
+                }
+                for result in results
+            ]
+
+    return messages
+
+
+cache_get_all_sms()
+
+@router.get("")
+def get_all_sms(
+    current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_and_normal_user)],
+):
+    messages = mc.get("message_list3")
+    messages = json.loads(messages)
+    messages = set_cached_result_to_json(messages["items"], current_user)
+    return messages
+
 
 @router.get("/phone/{mobile_number}")
 def get_all_sms_by_phone_number(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_and_normal_user)],
-    mobile_number: str, 
-    pagination: PaginationParams.PaginationParams = Depends(),
+    mobile_number: str,
     db: Session = Depends(get_db)
 ):
-    print(mobile_number)
     random_number = str(random.randint(1, 10000000))
     try:
-
         query = text(
             """
 DECLARE @command NVARCHAR(MAX)
@@ -136,8 +192,7 @@ CREATE TABLE #TempResults_""" + random_number + """ (
     ToAddress NVARCHAR(32),
     Body NVARCHAR(MAX),
     StatusID NVARCHAR(32),
-    SentTime DATETIME2(7),
-    TotalCount BIGINT
+    SentTime DATETIME2(7)
 )
 
 SELECT @command = '
@@ -160,7 +215,7 @@ BEGIN
             SET @sql_query = 
                 ''INSERT INTO #TempResults_""" + random_number + """ (MessageID, ToAddress, SentTime, Body, StatusID) '' +
                 ''SELECT MessageID, ToAddress, SentTime, Body, StatusID '' +
-                ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a '' +
+                ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a WITH (NOLOCK)'' +
                 ''INNER JOIN '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + ''_Sms b '' +
                 ''ON a.OriginalID = b.MessageID '' +
                 ''WHERE b.ToAddress LIKE ''''"""+"""%"""+mobile_number+"""%"""+"""'''';''
@@ -172,7 +227,7 @@ BEGIN
             SET @sql_query = 
                 ''INSERT INTO #TempResults_""" + random_number + """ (MessageID, ToAddress, SentTime, Body, StatusID) '' +
                 ''SELECT MessageID, ToAddress, SentTime, Body, StatusID '' +
-                ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a '' +
+                ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a WITH (NOLOCK)'' +
                 ''INNER JOIN '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + ''_Sms b '' +
                 ''ON a.id = b.MessageID '' +
                 ''WHERE b.ToAddress LIKE ''''"""+"""%"""+mobile_number+"""%"""+"""'''';''
@@ -183,29 +238,14 @@ END'
 
 EXEC sp_MSforeachdb @command
 
-DECLARE @TotalCount BIGINT;
-SET @TotalCount = (SELECT COUNT(*) FROM #TempResults_""" + random_number + """);
-
-SELECT *, @TotalCount As TotalCount FROM #TempResults_""" + random_number + """
-ORDER BY """
-+ pagination.sort_by
-+ " "
-+ pagination.sort_order
-+ """
-OFFSET """
-+ str((pagination.page - 1) * pagination.page_size)
-+ """ ROWS
-FETCH NEXT """
-+ str(pagination.page_size)
-+ """ ROWS ONLY
+SELECT * FROM #TempResults_""" + random_number + """
 
 DROP TABLE #TempResults_""" + random_number + """
             """
         )
 
         results = db.execute(query).fetchall()
-
-        return set_db_result_to_json(results, current_user, pagination)
+        return set_db_result_to_json(results, current_user)
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error executing SQL query: {str(e)}"
@@ -261,7 +301,6 @@ def export_pdf(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_and_normal_user)],
     content: dict
 ):
-    print(content)
     obj = {
         "MessageID": str(content["MessageID"]),
         "ToAddress": content["ToAddress"],
@@ -290,37 +329,3 @@ def export_pdf(
     pyreportjasper.process_report()
     return FileResponse(output_file, filename=file_name, media_type="application/pdf")
 
-def set_db_result_to_json(results, current_active_user, pagination):
-    messages = {
-        "items": [],
-        "total": 0,
-        "paginator": pagination
-    }
-
-    if results != []:
-        if(current_active_user.role_id == 1):
-            messages["items"] = [
-                {
-                    "MessageID": result[0],
-                    "ToAddress": result[1],
-                    "Body": result[2],
-                    "StatusID": result[3],
-                    "SentTime": result[4],
-                }
-                for result in results
-            ]
-        else :
-            messages["items"] = [
-                {
-                    "MessageID": result[0],
-                    "ToAddress": result[1],
-                    "Body": re.sub(r"\d", "*", result[2]),
-                    "StatusID": result[3],
-                    "SentTime": result[4],
-                }
-                for result in results
-            ]
-
-        messages["total"] = results[0][6]
-
-    return messages

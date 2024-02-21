@@ -14,12 +14,13 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { SnackBarService } from 'app/modules/services/snack-bar.service';
+import { MatSort, MatSortModule } from '@angular/material/sort';
 
 @Component({
   selector: 'app-sms-list2',
   standalone: true,
   imports: [CommonModule, MatTableModule, MatFormFieldModule, FormsModule, MatInputModule,
-    MatPaginatorModule, MatProgressSpinnerModule, MatButtonModule, ReactiveFormsModule, MatDatepickerModule],
+    MatPaginatorModule, MatProgressSpinnerModule, MatButtonModule, ReactiveFormsModule, MatDatepickerModule, MatSortModule],
   templateUrl: './sms-list2.component.html',
   styleUrl: './sms-list2.component.scss'
 })
@@ -52,19 +53,22 @@ export class SmsList2Component {
   ) { }
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
+  @ViewChild(MatSort) sort: MatSort;
 
   ngOnInit(): void {
     this.loadSMS()
   }
 
+  ngAfterViewInit(){
+    this.smsList.paginator = this.paginator;
+    this.smsList.sort = this.sort;
+  }
+
   loadSMS() {
     this.isLoading = true;
-    this.smsService.getAllSMS(this.pageAndSort).subscribe({
+    this.smsService.getAllSMS().subscribe({
       next: (data) => {
-        this.smsList = data.items;
-        this.paginator.length = data.total;
-        this.paginator.pageIndex = data.paginator.page - 1;
-        this.pageAndSort.page = data.paginator.page - 1;
+        this.smsList.data = data.items;
         this.isLoading = false;
       },
       error: (error) => {
@@ -80,12 +84,12 @@ export class SmsList2Component {
   searchSMS() {
     this.isLoading = true;
 
-    this.smsService.searchAllSMSByMobileNumber(this.searchTerm, this.pageAndSort).subscribe({
+    this.smsService.searchAllSMSByMobileNumber(this.searchTerm).subscribe({
       next: (data) => {
-        this.smsList = data.items;
-        this.paginator.length = data.total;
-        this.paginator.pageIndex = data.paginator.page - 1;
-        this.pageAndSort.page = data.paginator.page - 1;
+        console.log("DATA RECEIVED2");
+        console.log(data);
+        
+        this.smsList.data = data.items;
         this.isLoading = false;
       },
       error: (error) => {
@@ -96,7 +100,7 @@ export class SmsList2Component {
   }
 
   exportExcel() {
-    this.smsService.exportExcel(this.smsList).subscribe((data => {
+    this.smsService.exportExcel(this.smsList.sortData(this.smsList.data, this.sort)).subscribe((data => {
       this.handleFileDownload(data);
     }))
   }
