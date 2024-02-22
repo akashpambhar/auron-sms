@@ -1,10 +1,9 @@
-import datetime
 import re
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from pymemcache.client import base
-from database2 import SessionLocal
+from database2 import get_db
 import random
 import xlsxwriter
 from fastapi.responses import FileResponse
@@ -18,13 +17,6 @@ import json
 router = APIRouter(prefix="/d2/sms", tags=["sms2"])
 
 mc = base.Client((os.getenv("MC_SERVER"), 11211))
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 def cache_get_all_sms(
     db: Session = next(get_db())

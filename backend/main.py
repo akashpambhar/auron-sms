@@ -8,12 +8,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from pymemcache.client import base
-from database import engine, Base
-from database2 import SessionLocal as sl
+from database import Base, engine
+from database2 import get_db
 from routers import auth, sms, sms2, sms3, users
 
 Base.metadata.create_all(bind=engine)
-
 
 mc = base.Client((os.getenv("MC_SERVER"), 11211))
 
@@ -36,21 +35,13 @@ app.include_router(users.router)
 oauth2_scheme = auth.get_auth_scheme()
 
 
-def get_db2():
-    db2 = sl()
-    try:
-        yield db2
-    finally:
-        db2.close()
-
-
-@app.get("")
+@app.get("/")
 def server_health():
     return {"message": "Server is running"}
 
 
 @app.get("/get_all_databases")
-def get_all_databases(db: Session = Depends(get_db2)):
+def get_all_databases(db: Session = Depends(get_db)):
     query = text("SELECT name FROM sys.databases")
     results = db.execute(query).fetchall()
     databases = [result[0] for result in results]
