@@ -270,8 +270,6 @@ def create_excel_file(sms_list):
     workbook = xlsxwriter.Workbook(os.getcwd() + "/excel/" + file_name)
     worksheet = workbook.add_worksheet()
 
-    date_format = workbook.add_format({'num_format': 'yyyy-mm-ddThh:mm:ss.000'})
-    
     row = 0
 
     worksheet.write(row, 0, "MessageID")
@@ -287,8 +285,7 @@ def create_excel_file(sms_list):
         worksheet.write(row, 1, sms["ToAddress"])
         worksheet.write(row, 2, sms["Body"])
         worksheet.write(row, 3, sms["StatusID"])
-        sent_time = datetime.datetime.strptime(str(sms["SentTime"]), '%Y-%m-%dT%H:%M:%S.%f')
-        worksheet.write(row, 4, sent_time, date_format)
+        worksheet.write(row, 4, sms["SentTime"])
         row += 1
         
     workbook.close()
