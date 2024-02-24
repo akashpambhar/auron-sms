@@ -13,6 +13,7 @@ from routers import auth
 from typing import Annotated
 from schemas import UserSchema, RoleSchema
 import json
+from utils.Utils import get_list_from_env
 
 router = APIRouter(prefix="/d1/sms", tags=["sms1"])
 
@@ -110,6 +111,13 @@ def get_all_sms(
     messages = set_cached_result_to_json(messages["items"], current_user)
     return messages
 
+databases = get_list_from_env('ARCHIVE_DB_LIST_SERVER1')
+
+def run_query(db_con, db_name, mobile_number, start_date, end_date):
+    query = text("EXEC dbo.GetMessagesByMobileNumber :dbName, :mobileNumber, :startDate, :endDate;")
+    results = db_con.execute(query, {"dbName": db_name, "mobileNumber": mobile_number, 'startDate': start_date, 'endDate': end_date}).fetchall()
+
+    return results
 
 @router.get("/phone")
 def get_all_sms_by_phone_number(
@@ -120,8 +128,14 @@ def get_all_sms_by_phone_number(
     db: Session = Depends(get_db)
 ):
     try:
-        query = text("EXEC dbo.GetMessagesByMobileNumber 'AuSMS', :mobileNumber, :startDate, :endDate;")
-        results = db.execute(query, {"mobileNumber": mobile_number, 'startDate': start_date, 'endDate': end_date}).fetchall()
+        results = []
+
+        print(databases)
+
+        for db_name in databases:
+            db_results = run_query(db, db_name, mobile_number, start_date, end_date)
+            results.extend(db_results)
+
         return set_db_result_to_json(results, current_user)
     except Exception as e:
         raise HTTPException(

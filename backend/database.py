@@ -14,6 +14,7 @@ connection_string = f"mssql+pymssql://{SQL_USER}:{SQL_PASSWORD}@{SQL_SERVER}:{SQ
 engine = create_engine(
     connection_string,
     creator=lambda: pymssql.connect(SQL_SERVER, SQL_USER, SQL_PASSWORD, SQL_DB, port=SQL_PORT),
+    pool_size=20
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
