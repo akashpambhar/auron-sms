@@ -21,69 +21,13 @@ mc = base.Client((os.getenv("MC_SERVER"), 11211))
 def cache_get_all_sms(
     db: Session = next(get_db())
 ):
-    random_number = str(random.randint(1, 10000000))
-
+    if mc.get("message_list1") is not None:
+        return
     try:
-        query = text(
-            """
-DECLARE @command NVARCHAR(MAX)
-
-CREATE TABLE #TempResults_""" + random_number + """ (
-    MessageID int,
-    ToAddress NVARCHAR(32),
-    Body NVARCHAR(MAX),
-    StatusID NVARCHAR(32),
-	SentTime DATETIME2(7)
-)
-
-SELECT @command = '
-DECLARE @currentDB NVARCHAR(MAX);
-DECLARE @table_name NVARCHAR(MAX);
-DECLARE @sql_query NVARCHAR(MAX);
-
-SET @currentDB = ''?''; -- Store the current database name
-
-IF (@currentDB LIKE ''au%'' OR @currentDB LIKE ''ar%'') AND @currentDB NOT LIKE ''auron_sms'' AND @currentDB NOT LIKE ''Auintegration'' AND @currentDB NOT LIKE ''AuSmsServer-gw8'' AND @currentDB NOT LIKE ''ArchAuSmsServer-gw8'' 
-BEGIN 
-USE [?]
-    IF (LOWER(LEFT(@currentDB, 2)) = ''ar'')
-        SET @table_name = ''ArchMessages''
-    ELSE
-        SET @table_name = ''Messages''
-
-    IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @table_name AND COLUMN_NAME = ''OriginalID'')
-        BEGIN
-            SET @sql_query = 
-                ''INSERT INTO #TempResults_""" + random_number + """ (MessageID, ToAddress, Body, StatusID, SentTime) '' +
-                ''SELECT MessageID, ToAddress, Body, StatusID, SentTime '' +
-                ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a WITH (NOLOCK)'' +
-                ''INNER JOIN '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + ''_Sms b '' +
-                ''ON a.OriginalID = b.MessageID '' + ''WHERE a.SentTime BETWEEN DATEADD(HOUR, -5, GETDATE()) AND GETDATE();''
-
-            EXEC sp_executesql @sql_query
-        END
-    ELSE
-        BEGIN
-            SET @sql_query = 
-                ''INSERT INTO #TempResults_""" + random_number + """ (MessageID, ToAddress, Body, StatusID, SentTime) '' +
-                ''SELECT MessageID, ToAddress, Body, StatusID, SentTime '' +
-                ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a WITH (NOLOCK)'' +
-                ''INNER JOIN '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + ''_Sms b '' +
-                ''ON a.id = b.MessageID '' + ''WHERE a.SentTime BETWEEN DATEADD(HOUR, -5, GETDATE()) AND GETDATE();''
-
-            EXEC sp_executesql @sql_query
-        END
-END'
-
-EXEC sp_MSforeachdb @command
-
-SELECT TOP 2000 * FROM #TempResults_""" + random_number + """
-    
-DROP TABLE #TempResults_""" + random_number + """
-        """
-        )
+        query = text("EXEC dbo.GetAllMessages :dbname")
         
-        results = db.execute(query).fetchall()
+        results = db.execute(query, {"dbname": os.getenv('LIVE_DB_SERVER1')}).fetchall()
+
         json_messages = json.dumps(set_db_result_to_json(results, RoleSchema.Role(role_id=1, role_name='admin')), default=str)
         mc.set("message_list1", json_messages)
     except Exception as e:
@@ -167,76 +111,17 @@ def get_all_sms(
     return messages
 
 
-@router.get("/phone/{mobile_number}")
+@router.get("/phone")
 def get_all_sms_by_phone_number(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_and_normal_user)],
-    mobile_number: str,
+    mobile_number: str = None,
+    start_date: str = None,
+    end_date: str = None,
     db: Session = Depends(get_db)
 ):
-    random_number = str(random.randint(1, 10000000))
     try:
-        query = text(
-            """
-DECLARE @command NVARCHAR(MAX)
-
-CREATE TABLE #TempResults_""" + random_number + """ (
-    MessageID int,
-    ToAddress NVARCHAR(32),
-    Body NVARCHAR(MAX),
-    StatusID NVARCHAR(32),
-    SentTime DATETIME2(7)
-)
-
-SELECT @command = '
-DECLARE @currentDB NVARCHAR(MAX);
-DECLARE @table_name NVARCHAR(MAX);
-DECLARE @sql_query NVARCHAR(MAX);
-
-SET @currentDB = ''?''; -- Store the current database name
-
-IF (@currentDB LIKE ''au%'' OR @currentDB LIKE ''ar%'') AND @currentDB NOT LIKE ''auron_sms'' AND @currentDB NOT LIKE ''Auintegration'' AND @currentDB NOT LIKE ''AuSmsServer-gw8'' AND @currentDB NOT LIKE ''ArchAuSmsServer-gw8'' 
-BEGIN 
-    USE [?]
-    IF (LOWER(LEFT(@currentDB, 2)) = ''ar'')
-        SET @table_name = ''ArchMessages''
-    ELSE
-        SET @table_name = ''Messages''
-
-    IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @table_name AND COLUMN_NAME = ''OriginalID'')
-        BEGIN
-            SET @sql_query = 
-                ''INSERT INTO #TempResults_""" + random_number + """ (MessageID, ToAddress, SentTime, Body, StatusID) '' +
-                ''SELECT MessageID, ToAddress, SentTime, Body, StatusID '' +
-                ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a WITH (NOLOCK)'' +
-                ''INNER JOIN '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + ''_Sms b '' +
-                ''ON a.OriginalID = b.MessageID '' +
-                ''WHERE b.ToAddress LIKE ''''"""+"""%"""+mobile_number+"""%"""+"""'''';''
-
-            EXEC sp_executesql @sql_query
-        END
-    ELSE
-        BEGIN
-            SET @sql_query = 
-                ''INSERT INTO #TempResults_""" + random_number + """ (MessageID, ToAddress, SentTime, Body, StatusID) '' +
-                ''SELECT MessageID, ToAddress, SentTime, Body, StatusID '' +
-                ''FROM '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + '' a WITH (NOLOCK)'' +
-                ''INNER JOIN '' + QUOTENAME(@currentDB) + ''.dbo.'' + @table_name + ''_Sms b '' +
-                ''ON a.id = b.MessageID '' +
-                ''WHERE b.ToAddress LIKE ''''"""+"""%"""+mobile_number+"""%"""+"""'''';''
-
-            EXEC sp_executesql @sql_query
-        END
-END'
-
-EXEC sp_MSforeachdb @command
-
-SELECT * FROM #TempResults_""" + random_number + """
-
-DROP TABLE #TempResults_""" + random_number + """
-            """
-        )
-
-        results = db.execute(query).fetchall()
+        query = text("EXEC dbo.GetMessagesByMobileNumber 'AuSMS', :mobileNumber, :startDate, :endDate;")
+        results = db.execute(query, {"mobileNumber": mobile_number, 'startDate': start_date, 'endDate': end_date}).fetchall()
         return set_db_result_to_json(results, current_user)
     except Exception as e:
         raise HTTPException(
