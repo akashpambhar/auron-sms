@@ -15,19 +15,21 @@ import { SmsDetailComponent } from '../sms-detail/sms-detail.component';
 import { saveAs } from 'file-saver';
 import { Sms3Service } from 'app/modules/services/sms3.service';
 import { MatSort, MatSortModule } from '@angular/material/sort';
+import { SelectionModel } from '@angular/cdk/collections';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 
 @Component({
   selector: 'app-sms-list3',
   standalone: true,
-  imports: [CommonModule, MatTableModule, MatFormFieldModule, FormsModule, MatInputModule,
+  imports: [CommonModule, MatTableModule, MatFormFieldModule, FormsModule, MatInputModule,MatCheckboxModule,
     MatPaginatorModule, MatProgressSpinnerModule, MatButtonModule, ReactiveFormsModule, MatDatepickerModule, MatSortModule],
   templateUrl: './sms-list3.component.html',
   styleUrl: './sms-list3.component.scss'
 })
 export class SmsList3Component {
-
-  displayedColumns: string[] = ['MessageID', 'ToAddress', 'Body', 'StatusID', 'SentTime'];
+  displayedColumns: string[] = ['select', 'MessageID', 'ToAddress', 'Body', 'StatusID', 'SentTime'];
   smsList = new MatTableDataSource<any>();
+  selection = new SelectionModel<any>(true, []);
 
   searchTerm = ''
 
@@ -100,14 +102,34 @@ export class SmsList3Component {
   }
 
   exportExcel() {
-    this.smsService.exportExcel(this.smsList.sortData(this.smsList.data, this.sort)).subscribe((data => {
-      this.handleFileDownload(data);
-    }))
+    if (this.selection.selected.length === 0) {
+      this.snackBarService.showSnackbar("Please select any records to export")
+      return;
+    }
+    
+    this.smsService.exportExcel(this.smsList.sortData(this.selection.selected, this.sort)).subscribe({
+      next: (data) => {
+        this.handleFileDownload(data);
+      },
+      error: (error) => {
+        this.snackBarService.showSnackbar(error.error.detail)
+      }
+    })
   }
 
   private handleFileDownload(response: any): void {
     const blob = new Blob([response.body], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(blob);
+
+    const date = new Date();
+    const dateString = date.getFullYear() + "-" +
+      ("0" + (date.getMonth() + 1)).slice(-2) + "-" +
+      ("0" + date.getDate()).slice(-2) + "_" +
+      ("0" + date.getHours()).slice(-2) + "-" +
+      ("0" + date.getMinutes()).slice(-2) + "-" +
+      ("0" + date.getSeconds()).slice(-2);
+
+    const filename = `auron_sms_${dateString}.xlsx`;
+    saveAs(blob, filename);
   }
 
   resetFilter() {
@@ -115,6 +137,7 @@ export class SmsList3Component {
     this.dateRange.reset();
     this.resetPageSort();
     this.loadSMS();
+    this.selection.clear();
   }
 
   resetPageSort() {
@@ -142,5 +165,30 @@ export class SmsList3Component {
     this.dialog.open(SmsDetailComponent, {
       data: data
     })
+  }
+
+  /** Whether the number of selected elements matches the total number of rows. */
+  isAllSelected() {
+    const numSelected = this.selection.selected.length;
+    const numRows = this.smsList.data.length;
+    return numSelected === numRows;
+  }
+
+  /** Selects all rows if they are not all selected; otherwise clear selection. */
+   masterToggle() {
+    if (this.isAllSelected()) {
+      this.selection.clear()
+    }
+    else {
+      this.selection.clear()
+      this.smsList.data.forEach(row => this.selection.select(row));
+    }
+  }
+
+  checkboxLabel(row?: any): string {
+    if (!row) {
+      return `${this.isAllSelected() ? 'select' : 'deselect'} all`;
+    }
+    return `${this.selection.isSelected(row) ? 'deselect' : 'select'} row ${row.id}`;
   }
 }

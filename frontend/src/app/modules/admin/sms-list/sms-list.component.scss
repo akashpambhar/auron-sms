@@ -17,3 +17,8 @@
 .mat-mdc-row:hover .mat-mdc-cell{
   background-color: #a1aab622;
 }
+
+.table-container{
+	max-height: 480px;
+	overflow-y: scroll;
+}

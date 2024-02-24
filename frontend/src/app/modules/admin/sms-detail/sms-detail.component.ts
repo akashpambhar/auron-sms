@@ -38,7 +38,10 @@ export class SmsDetailComponent implements OnInit {
 
   private handleFileDownload(response: any): void {
     const blob = new Blob([response.body], { type: 'application/pdf' });
-    saveAs(blob);
+
+    const filename = `auron_sms_${this.sms.MessageID}.pdf`;
+    saveAs(blob, filename);
+
     this.isLoading = false;
   }
 

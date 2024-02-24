@@ -17,8 +17,21 @@
       <button class="fuse-mat-button bg-accent-300" mat-flat-button (click)="resetFilter()">Reset</button>
       <button class="fuse-mat-button w-80 bg-primary-200" mat-flat-button (click)="exportExcel()">Export to Excel</button>
     </div>
-    <div>
+    <div class="table-container">
       <table mat-table [dataSource]="smsList" matSort>
+
+        <ng-container matColumnDef="select">
+          <th mat-header-cell *matHeaderCellDef>
+            <mat-checkbox (change)="$event ? masterToggle() : null" [checked]="isAllSelected()"
+              [indeterminate]="selection.selected.length > 0 && !isAllSelected()" [aria-label]="checkboxLabel()">
+            </mat-checkbox>
+          </th>
+          <td mat-cell *matCellDef="let row">
+            <mat-checkbox (click)="$event.stopPropagation()" (change)="$event ? selection.toggle(row) : null"
+              [checked]="selection.isSelected(row)" [aria-label]="checkboxLabel(row)">
+            </mat-checkbox>
+          </td>
+        </ng-container>
 
         <ng-container matColumnDef="MessageID">
           <th mat-header-cell *matHeaderCellDef mat-sort-header> MessageID </th>
@@ -48,16 +61,15 @@
           <td mat-cell *matCellDef="let element"> {{element.SentTime | date: 'medium'}} </td>
         </ng-container>
 
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
         <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
       </table>
-      <div class="spinner-container">
-        <mat-progress-spinner *ngIf="isLoading" [diameter]="40" [mode]="'indeterminate'"></mat-progress-spinner>
-      </div>
-      <mat-paginator [pageSize]="5" [pageSizeOptions]="[5, 10, 25, 100]" (page)="nextPage($event)"
-        aria-label="Select page">
-      </mat-paginator>
 
     </div>
+    <div class="spinner-container">
+      <mat-progress-spinner *ngIf="isLoading" [diameter]="40" [mode]="'indeterminate'"></mat-progress-spinner>
+    </div>
+    <mat-paginator [pageSize]="5" [pageSizeOptions]="[5, 10, 25, 100]" aria-label="Select page">
+    </mat-paginator>
   </div>
 </div>
