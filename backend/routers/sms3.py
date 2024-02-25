@@ -195,7 +195,7 @@ def get_excel_file(
 ):
     file_name = create_excel_file(sms_list)
 
-    file_path = os.getcwd() + "\\excel\\" + file_name
+    file_path = os.path.join(os.getcwd(), "excel", file_name)
 
     return FileResponse(path=file_path, filename=file_name, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
