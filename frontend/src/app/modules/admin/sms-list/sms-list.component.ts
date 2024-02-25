@@ -4,7 +4,7 @@ import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatInputModule } from '@angular/material/input';
-import { MatPaginator, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
@@ -28,11 +28,12 @@ const moment = require('moment-timezone');
   styleUrl: './sms-list.component.scss'
 })
 export class SmsListComponent implements OnInit {
+
   displayedColumns: string[] = ['select', 'MessageID', 'ToAddress', 'Body', 'StatusID', 'SentTime'];
   smsList = new MatTableDataSource<any>();
   selection = new SelectionModel<any>(true, []);
 
-  searchTerm = ''
+  searchTerm = '';
 
   dateRange = this.fb.group({
     start: [null],

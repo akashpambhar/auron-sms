@@ -6,7 +6,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatPaginatorModule, MatPaginator, PageEvent } from '@angular/material/paginator';
+import { MatPaginatorModule, MatPaginator } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { PageSort } from 'app/modules/models/utils';
@@ -17,16 +17,18 @@ import { Sms3Service } from 'app/modules/services/sms3.service';
 import { MatSort, MatSortModule } from '@angular/material/sort';
 import { SelectionModel } from '@angular/cdk/collections';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+const moment = require('moment-timezone');
 
 @Component({
   selector: 'app-sms-list3',
   standalone: true,
-  imports: [CommonModule, MatTableModule, MatFormFieldModule, FormsModule, MatInputModule,MatCheckboxModule,
+  imports: [CommonModule, MatTableModule, MatFormFieldModule, FormsModule, MatInputModule, MatCheckboxModule,
     MatPaginatorModule, MatProgressSpinnerModule, MatButtonModule, ReactiveFormsModule, MatDatepickerModule, MatSortModule],
   templateUrl: './sms-list3.component.html',
   styleUrl: './sms-list3.component.scss'
 })
 export class SmsList3Component {
+
   displayedColumns: string[] = ['select', 'MessageID', 'ToAddress', 'Body', 'StatusID', 'SentTime'];
   smsList = new MatTableDataSource<any>();
   selection = new SelectionModel<any>(true, []);
@@ -61,7 +63,7 @@ export class SmsList3Component {
     this.loadSMS()
   }
 
-  ngAfterViewInit(){
+  ngAfterViewInit() {
     this.smsList.paginator = this.paginator;
     this.smsList.sort = this.sort;
   }
@@ -80,17 +82,19 @@ export class SmsList3Component {
     })
   }
 
-  onDateRangeChange() {
-  }
-
   searchSMS() {
-    this.isLoading = true;
+    let startDate = null;
+    let endDate = null;
+    if (this.dateRange.getRawValue().end) {
+      startDate = moment(new Date(this.dateRange.getRawValue().start)).format('YYYY/MM/DD')
+      endDate = new Date(this.dateRange.getRawValue().end)
+      endDate.setDate(endDate.getDate() + 1);
+      endDate = moment(endDate).format('YYYY/MM/DD');
+    }
 
-    this.smsService.searchAllSMSByMobileNumber(this.searchTerm).subscribe({
+    this.isLoading = true;
+    this.smsService.searchAllSMSByMobileNumber(this.searchTerm, startDate, endDate).subscribe({
       next: (data) => {
-        console.log("DATA RECEIVED3");
-        console.log(data);
-        
         this.smsList.data = data.items;
         this.isLoading = false;
       },
@@ -106,7 +110,7 @@ export class SmsList3Component {
       this.snackBarService.showSnackbar("Please select any records to export")
       return;
     }
-    
+
     this.smsService.exportExcel(this.smsList.sortData(this.selection.selected, this.sort)).subscribe({
       next: (data) => {
         this.handleFileDownload(data);
@@ -151,16 +155,6 @@ export class SmsList3Component {
     };
   }
 
-  nextPage(event: PageEvent) {
-    this.pageAndSort.page = event.pageIndex;
-    this.pageAndSort.size = event.pageSize;
-
-    if (this.searchTerm)
-      this.searchSMS();
-    else
-      this.loadSMS();
-  }
-
   openDialog(data: any) {
     this.dialog.open(SmsDetailComponent, {
       data: data
@@ -175,7 +169,7 @@ export class SmsList3Component {
   }
 
   /** Selects all rows if they are not all selected; otherwise clear selection. */
-   masterToggle() {
+  masterToggle() {
     if (this.isAllSelected()) {
       this.selection.clear()
     }

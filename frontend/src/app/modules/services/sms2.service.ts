@@ -16,8 +16,26 @@ export class Sms2Service {
     return this.http.get<any>(`${this.url}`);
   }
 
-  searchAllSMSByMobileNumber(mobileNumber: string): Observable<any> {
-    return this.http.get<any>(`${this.url}/phone/${mobileNumber}`);
+  searchAllSMSByMobileNumber(mobileNumber: any, startDate: any, endDate: any): Observable<any> {
+    let params = {};
+
+    if (startDate && endDate) {
+      params = {
+        start_date: startDate,
+        end_date: endDate
+      }
+    }
+
+    if (mobileNumber) {
+      params = {
+        ...params,
+        mobile_number: mobileNumber
+      }
+    }
+
+    return this.http.get<any>(`${this.url}/phone`, {
+      params: params
+    });
   }
 
   exportExcel(smsList: any): Observable<any> {

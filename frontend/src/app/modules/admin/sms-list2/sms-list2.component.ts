@@ -2,7 +2,7 @@ import { Component, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
-import { MatPaginator, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { PageSort } from 'app/modules/models/utils';
 import { SmsDetailComponent } from '../sms-detail/sms-detail.component';
@@ -17,6 +17,7 @@ import { SnackBarService } from 'app/modules/services/snack-bar.service';
 import { MatSort, MatSortModule } from '@angular/material/sort';
 import { SelectionModel } from '@angular/cdk/collections';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+const moment = require('moment-timezone');
 
 @Component({
   selector: 'app-sms-list2',
@@ -27,6 +28,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
   styleUrl: './sms-list2.component.scss'
 })
 export class SmsList2Component {
+
   displayedColumns: string[] = ['select', 'MessageID', 'ToAddress', 'Body', 'StatusID', 'SentTime'];
   smsList = new MatTableDataSource<any>();
   selection = new SelectionModel<any>(true, []);
@@ -80,13 +82,18 @@ export class SmsList2Component {
     })
   }
 
-  onDateRangeChange() {
-  }
-
   searchSMS() {
-    this.isLoading = true;
+    let startDate = null;
+    let endDate = null;
+    if (this.dateRange.getRawValue().end) {
+      startDate = moment(new Date(this.dateRange.getRawValue().start)).format('YYYY/MM/DD')
+      endDate = new Date(this.dateRange.getRawValue().end)
+      endDate.setDate(endDate.getDate() + 1);
+      endDate = moment(endDate).format('YYYY/MM/DD');
+    }
 
-    this.smsService.searchAllSMSByMobileNumber(this.searchTerm).subscribe({
+    this.isLoading = true;
+    this.smsService.searchAllSMSByMobileNumber(this.searchTerm, startDate, endDate).subscribe({
       next: (data) => {
         this.smsList.data = data.items;
         this.isLoading = false;
@@ -146,16 +153,6 @@ export class SmsList2Component {
         direction: "desc"
       }
     };
-  }
-
-  nextPage(event: PageEvent) {
-    this.pageAndSort.page = event.pageIndex;
-    this.pageAndSort.size = event.pageSize;
-
-    if (this.searchTerm)
-      this.searchSMS();
-    else
-      this.loadSMS();
   }
 
   openDialog(data: any) {

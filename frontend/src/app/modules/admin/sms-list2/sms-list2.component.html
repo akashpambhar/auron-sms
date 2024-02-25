@@ -8,6 +8,17 @@
         <input matInput [(ngModel)]="searchTerm" type="number" placeholder="97112345678" (keydown.enter)="searchSMS()">
       </mat-form-field>
 
+      <mat-form-field class="w-full">
+        <mat-label>Enter a date range</mat-label>
+        <mat-date-range-input [formGroup]="dateRange" [rangePicker]="picker">
+          <input matStartDate formControlName="start" placeholder="Start date" #dateRangeStart>
+          <input matEndDate formControlName="end" placeholder="End date" #dateRangeEnd>
+        </mat-date-range-input>
+        <mat-label> (MM/DD/YYYY - MM/DD/YYYY) </mat-label>
+        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+        <mat-date-range-picker #picker></mat-date-range-picker>
+      </mat-form-field>
+
       <button class="fuse-mat-button" mat-flat-button [color]="'primary'" (click)="searchSMS()">
         <span>
           Search
