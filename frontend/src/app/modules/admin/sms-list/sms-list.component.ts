@@ -17,6 +17,7 @@ import { SnackBarService } from 'app/modules/services/snack-bar.service';
 import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { SelectionModel } from '@angular/cdk/collections';
+const moment = require('moment-timezone');
 
 @Component({
   selector: 'app-sms-list',
@@ -80,13 +81,18 @@ export class SmsListComponent implements OnInit {
     })
   }
 
-  onDateRangeChange() {
-  }
-
   searchSMS() {
-    this.isLoading = true;
+    let startDate = null;
+    let endDate = null;
+    if (this.dateRange.getRawValue().end) {
+      startDate = moment(new Date(this.dateRange.getRawValue().start)).format('YYYY/MM/DD')
+      endDate = new Date(this.dateRange.getRawValue().end)
+      endDate.setDate(endDate.getDate() + 1);
+      endDate = moment(endDate).format('YYYY/MM/DD');
+    }
 
-    this.smsService.searchAllSMSByMobileNumber(this.searchTerm).subscribe({
+    this.isLoading = true;
+    this.smsService.searchAllSMSByMobileNumber(this.searchTerm, startDate, endDate).subscribe({
       next: (data) => {
         this.smsList.data = data.items;
         this.isLoading = false;
@@ -103,7 +109,7 @@ export class SmsListComponent implements OnInit {
       this.snackBarService.showSnackbar("Please select any records to export")
       return;
     }
-    
+
     this.smsService.exportExcel(this.smsList.sortData(this.selection.selected, this.sort)).subscribe({
       next: (data) => {
         this.handleFileDownload(data);
@@ -162,7 +168,7 @@ export class SmsListComponent implements OnInit {
   }
 
   /** Selects all rows if they are not all selected; otherwise clear selection. */
-   masterToggle() {
+  masterToggle() {
     if (this.isAllSelected()) {
       this.selection.clear()
     }
