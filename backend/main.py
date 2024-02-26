@@ -7,14 +7,14 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from pymemcache.client import base
+# from pymemcache.client import base
 from database import Base, engine
 from database import get_db
 from routers import auth, sms, sms2, sms3, users
 
 Base.metadata.create_all(bind=engine)
 
-mc = base.Client((os.getenv("MC_SERVER"), 11211))
+# mc = base.Client((os.getenv("MC_SERVER"), 11211))
 
 app = FastAPI()
 
