@@ -2,7 +2,7 @@ import re
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from pymemcache.client import base
+# from pymemcache.client import base
 from database2 import get_db 
 import random
 import xlsxwriter
@@ -17,20 +17,20 @@ from utils.Utils import get_list_from_env
 
 router = APIRouter(prefix="/d2/sms", tags=["sms2"])
 
-mc = base.Client((os.getenv("MC_SERVER"), 11211))
+# mc = base.Client((os.getenv("MC_SERVER"), 11211))
 
 def cache_get_all_sms(
     db: Session = next(get_db())
 ):
-    if mc.get("message_list2") is not None:
-        return
+    # if mc.get("message_list2") is not None:
+    #     return
     try:
         query = text("EXEC dbo.GetAllMessages :dbname")
         
         results = db.execute(query, {"dbname": os.getenv('LIVE_DB_SERVER2')}).fetchall()
 
         json_messages = json.dumps(set_db_result_to_json(results, RoleSchema.Role(role_id=1, role_name='admin')), default=str)
-        mc.set("message_list2", json_messages)
+        # mc.set("message_list2", json_messages)
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error executing SQL query: {str(e)}"
@@ -100,15 +100,26 @@ def set_cached_result_to_json(results, current_active_user):
     return messages
 
 
-cache_get_all_sms()
+# cache_get_all_sms()
 
 @router.get("")
 def get_all_sms(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_and_normal_user)],
+    db: Session = Depends(get_db)
 ):
-    messages = mc.get("message_list2")
-    messages = json.loads(messages)
-    messages = set_cached_result_to_json(messages["items"], current_user)
+    # messages = mc.get("message_list2")
+    try:
+        query = text("EXEC dbo.GetAllMessages :dbname")
+        
+        results = db.execute(query, {"dbname": os.getenv('LIVE_DB_SERVER2')}).fetchall()
+
+        messages = set_db_result_to_json(results, RoleSchema.Role(role_id=1, role_name='admin'))
+        # mc.set("message_list2", json_messages)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error executing SQL query: {str(e)}"
+        )
+    
     return messages
 
 databases = get_list_from_env('ARCHIVE_DB_LIST_SERVER2')
