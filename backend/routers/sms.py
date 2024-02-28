@@ -58,7 +58,9 @@ def set_db_result_to_json(results, current_active_user):
                 {
                     "MessageID": result[0],
                     "ToAddress": result[1],
-                    "Body": re.sub(r"\d", "*", result[2]),
+                    # "Body": re.sub(r"\d", "*", result[2]),
+                    # "Body": re.sub(r'\d{4,6}', lambda x: '*' * len(x.group()), result[2]),
+                    "Body": re.sub(r'\b\d{2,3}\s?\d{2,3}\b', "****", result[2]),
                     "StatusID": result[3],
                     "SentTime": result[4]
                 }
