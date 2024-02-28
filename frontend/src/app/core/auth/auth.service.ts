@@ -39,7 +39,8 @@ export class AuthService {
    * @param email
    */
   forgotPassword(email: string): Observable<any> {
-    return this._httpClient.post('api/auth/forgot-password', email);
+    let url = `${this.configService.getEnvConfig().API_URL}/users/forgot-password`;
+    return this._httpClient.post(url, {"email": email});
   }
 
   /**
@@ -47,8 +48,9 @@ export class AuthService {
    *
    * @param password
    */
-  resetPassword(password: string): Observable<any> {
-    return this._httpClient.post('api/auth/reset-password', password);
+  resetPassword(token:string, password: string): Observable<any> {
+    let url = `${this.configService.getEnvConfig().API_URL}/users/reset-password`;
+    return this._httpClient.post(url, {"token": token, "new_password": password});
   }
 
   /**
