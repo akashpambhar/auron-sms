@@ -60,7 +60,9 @@ def set_db_result_to_json(results, current_active_user):
                     "ToAddress": result[1],
                     # "Body": re.sub(r"\d", "*", result[2]),
                     # "Body": re.sub(r'\d{4,6}', lambda x: '*' * len(x.group()), result[2]),
-                    "Body": re.sub(r'\b\d{2,3}\s?\d{2,3}\b', "****", result[2]),
+                    # "Body": re.sub(r'\b\d{2,3}\s?\d{2,3}\b', "****", result[2]),
+                    "Body": re.sub(r'\b\d{4}\b|\b\d{6}\b', lambda x: '*' * len(x.group()), result[2]),
+                    # "Body": re.sub(r'(?<=OTP\s)\d+', "****", result[2]),
                     "StatusID": result[3],
                     "SentTime": result[4]
                 }
@@ -92,7 +94,7 @@ def set_cached_result_to_json(results, current_active_user):
                 {
                     "MessageID": result["MessageID"],
                     "ToAddress": result["ToAddress"],
-                    "Body": re.sub(r"\d", "*", result["Body"]),
+                    "Body": re.sub(r'\b\d{2,3}\s?\d{2,3}\b', "****", result[2]),
                     "StatusID": result["StatusID"],
                     "SentTime": result["SentTime"]
                 }
@@ -117,7 +119,7 @@ def get_all_sms(
         
         results = db.execute(query, {"dbname": os.getenv('LIVE_DB_SERVER1')})
 
-        messages = set_db_result_to_json(results, RoleSchema.Role(role_id=1, role_name='admin'))
+        messages = set_db_result_to_json(results, current_user)
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error executing SQL query: {str(e)}"
