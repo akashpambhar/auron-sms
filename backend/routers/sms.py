@@ -36,6 +36,13 @@ def cache_get_all_sms(
             status_code=500, detail=f"Error executing SQL query: {str(e)}"
         )
 
+def mask_otp_in_body(body_text):
+    # Check if 'otp' or 'OTP' is in the text
+    if 'otp' in body_text.lower() or 'verification code' in body_text.lower() or 'apple pay' in body_text.lower() or 'مز التحقق' in body_text.lower() :
+        # Mask digits that are standalone or separated by a space and are 4 or 6 digits long
+        body_text = re.sub(r'\b\d{4}\b|\b\d{6}\b', lambda x: '*' * len(x.group()), body_text, flags=re.IGNORECASE)
+    return body_text
+
 def set_db_result_to_json(results, current_active_user):
     messages = {
         "items": []
@@ -61,8 +68,10 @@ def set_db_result_to_json(results, current_active_user):
                     # "Body": re.sub(r"\d", "*", result[2]),
                     # "Body": re.sub(r'\d{4,6}', lambda x: '*' * len(x.group()), result[2]),
                     # "Body": re.sub(r'\b\d{2,3}\s?\d{2,3}\b', "****", result[2]),
-                    "Body": re.sub(r'\b\d{4}\b|\b\d{6}\b', lambda x: '*' * len(x.group()), result[2]),
+                    # "Body": re.sub(r'\b\d{4}\b|\b\d{6}\b', lambda x: '*' * len(x.group()), result[2]),
                     # "Body": re.sub(r'(?<=OTP\s)\d+', "****", result[2]),
+                    # "Body": re.sub(r'(?<=OTP\s)\b\d{4}\b|\b\d{6}\b', lambda x: '*' * len(x.group()), result[2]),
+                    "Body": mask_otp_in_body(result[2]),
                     "StatusID": result[3],
                     "SentTime": result[4]
                 }
