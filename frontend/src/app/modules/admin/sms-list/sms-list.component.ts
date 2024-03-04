@@ -32,6 +32,10 @@ export class SmsListComponent implements OnInit {
   displayedColumns: string[] = ['select', 'MessageID', 'ToAddress', 'Body', 'StatusID', 'SentTime'];
   smsList = new MatTableDataSource<any>();
   selection = new SelectionModel<any>(true, []);
+  status = {
+    "success" : 0,
+    "failure" : 0
+  };
 
   searchTerm = '';
 
@@ -74,6 +78,8 @@ export class SmsListComponent implements OnInit {
       next: (data) => {
         this.smsList.data = data.items;
         this.isLoading = false;
+        this.status = data.status
+        
       },
       error: (error) => {
         this.snackBarService.showSnackbar(error.error.detail)
@@ -97,6 +103,7 @@ export class SmsListComponent implements OnInit {
       next: (data) => {
         this.smsList.data = data.items;
         this.isLoading = false;
+        this.status = data.status
       },
       error: (error) => {
         this.snackBarService.showSnackbar(error.error.detail)

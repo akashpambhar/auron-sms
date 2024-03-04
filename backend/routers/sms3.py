@@ -37,77 +37,57 @@ def cache_get_all_sms(
         )
 
 def mask_otp_in_body(body_text):
-    # Check if 'otp' or 'OTP' is in the text
     if 'otp' in body_text.lower() or 'verification code' in body_text.lower() or 'apple pay' in body_text.lower() or 'مز التحقق' in body_text.lower() :
-        # Mask digits that are standalone or separated by a space and are 4 or 6 digits long
         body_text = re.sub(r'\b\d{4}\b|\b\d{6}\b', lambda x: '*' * len(x.group()), body_text, flags=re.IGNORECASE)
     return body_text
 
 def set_db_result_to_json(results, current_active_user):
+    count = {
+        "success" : 0,
+        "failure" : 0
+    }
+
     messages = {
-        "items": []
+        "items": [],
+        "status": count
     }
 
     if results != []:
         if(current_active_user.role_id == 1):
-            messages["items"] = [
+            for result in results:
+                messages["items"].append(
                 {
                     "MessageID": result[0],
                     "ToAddress": result[1],
                     "Body": result[2],
                     "StatusID": result[3],
                     "SentTime": result[4]
-                }
-                for result in results
-            ]   
+                })
+
+                if 'success' in result[3].lower() or 'sent' in result[3].lower() :
+                    count["success"] = count["success"] + 1
+                else :
+                    count["failure"] = count["failure"] + 1
+                
         else :
-            messages["items"] = [
+            for result in results:
+                messages["items"].append(
                 {
                     "MessageID": result[0],
                     "ToAddress": result[1],
                     "Body": mask_otp_in_body(result[2]),
                     "StatusID": result[3],
                     "SentTime": result[4]
-                }
-                for result in results
-            ]
+                })
+
+                if 'success' in result[3].lower() or 'sent' in result[3].lower() :
+                    count["success"] = count["success"] + 1
+                else :
+                    count["failure"] = count["failure"] + 1
+
+    messages["status"] = count
 
     return messages
-
-
-def set_cached_result_to_json(results, current_active_user):
-    messages = {
-        "items": []
-    }
-
-    if results != []:
-        if(current_active_user.role_id == 1):
-            messages["items"] = [
-                {
-                    "MessageID": result["MessageID"],
-                    "ToAddress": result["ToAddress"],
-                    "Body": result["Body"],
-                    "StatusID": result["StatusID"],
-                    "SentTime": result["SentTime"]
-                }
-                for result in results
-            ]
-        else :
-            messages["items"] = [
-                {
-                    "MessageID": result["MessageID"],
-                    "ToAddress": result["ToAddress"],
-                    "Body": re.sub(r'\b\d{2,3}\s?\d{2,3}\b', "****", result[2]),
-                    "StatusID": result["StatusID"],
-                    "SentTime": result["SentTime"]
-                }
-                for result in results
-            ]
-
-    return messages
-
-
-# cache_get_all_sms()
 
 @router.get("")
 def get_all_sms(
