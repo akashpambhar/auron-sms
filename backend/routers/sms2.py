@@ -37,9 +37,7 @@ def cache_get_all_sms(
         )
 
 def mask_otp_in_body(body_text):
-    # Check if 'otp' or 'OTP' is in the text
-    if 'otp' in body_text.lower() or 'verification code' in body_text.lower() or 'apple pay' in body_text.lower() or 'مز التحقق' in body_text.lower() :
-        # Mask digits that are standalone or separated by a space and are 4 or 6 digits long
+    if body_text and 'otp' in body_text.lower() or 'verification code' in body_text.lower() or 'apple pay' in body_text.lower() or 'مز التحقق' in body_text.lower() :
         body_text = re.sub(r'\b\d{4}\b|\b\d{6}\b', lambda x: '*' * len(x.group()), body_text, flags=re.IGNORECASE)
     return body_text
 
@@ -67,7 +65,7 @@ def set_db_result_to_json(results, current_active_user):
                     "SentTime": result[4]
                 })
 
-                if 'received' in result[3].lower() :
+                if result[3] and 'received' in result[3].lower() :
                     count["received"] = count["received"] + 1
                 else :
                     count["sent"] = count["sent"] + 1
@@ -83,7 +81,7 @@ def set_db_result_to_json(results, current_active_user):
                     "SentTime": result[4]
                 })
 
-                if 'received' in result[3].lower() :
+                if result[3] and 'received' in result[3].lower() :
                     count["received"] = count["received"] + 1
                 else :
                     count["sent"] = count["sent"] + 1
