@@ -33,8 +33,9 @@ export class SmsList3Component {
   smsList = new MatTableDataSource<any>();
   selection = new SelectionModel<any>(true, []);
   status = {
-    "success" : 0,
-    "failure" : 0
+    "received" : 0,
+    "sent" : 0,
+    "total" : 0
   };
 
   searchTerm = ''

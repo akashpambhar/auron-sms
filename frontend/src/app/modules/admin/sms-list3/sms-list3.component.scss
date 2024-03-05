@@ -22,3 +22,10 @@
 	max-height: 480px;
 	overflow-y: scroll;
 }
+
+td {
+  overflow: hidden;
+  width: auto;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -45,8 +45,9 @@ def mask_otp_in_body(body_text):
 
 def set_db_result_to_json(results, current_active_user):
     count = {
-        "success" : 0,
-        "failure" : 0
+        "total" : 0,
+        "received" : 0,
+        "sent" : 0
     }
 
     messages = {
@@ -66,10 +67,10 @@ def set_db_result_to_json(results, current_active_user):
                     "SentTime": result[4]
                 })
 
-                if 'success' in result[3].lower() or 'sent' in result[3].lower() :
-                    count["success"] = count["success"] + 1
+                if 'received' in result[3].lower() :
+                    count["received"] = count["received"] + 1
                 else :
-                    count["failure"] = count["failure"] + 1
+                    count["sent"] = count["sent"] + 1
                 
         else :
             for result in results:
@@ -82,10 +83,12 @@ def set_db_result_to_json(results, current_active_user):
                     "SentTime": result[4]
                 })
 
-                if 'success' in result[3].lower() or 'sent' in result[3].lower() :
-                    count["success"] = count["success"] + 1
+                if 'received' in result[3].lower() :
+                    count["received"] = count["received"] + 1
                 else :
-                    count["failure"] = count["failure"] + 1
+                    count["sent"] = count["sent"] + 1
+                
+    count["total"] = count["received"] + count["sent"]
 
     messages["status"] = count
 

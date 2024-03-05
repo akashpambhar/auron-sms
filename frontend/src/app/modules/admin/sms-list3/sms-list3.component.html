@@ -33,12 +33,16 @@
     <div class="flex flex-col flex-auto dark:bg-default">
       <div class="hidden sm:flex items-center mb-3">
         <div class="p-4 leading-none rounded-l-xl border border-r-0 bg-card">
-          <div class="text-sm font-medium text-secondary">Success</div>
-          <div class="mt-2 font-mono text-xl">{{status.success}}</div>
+          <div class="text-sm font-medium text-secondary">Received</div>
+          <div class="mt-2 font-mono text-xl">{{status.received}}</div>
+        </div>
+        <div class="p-4 leading-none border bg-card">
+          <div class="text-sm font-medium text-secondary">Sent</div>
+          <div class="mt-2 font-mono text-xl">{{status.sent}}</div>
         </div>
         <div class="p-4 leading-none rounded-r-xl border bg-card">
-          <div class="text-sm font-medium text-secondary">Failure</div>
-          <div class="mt-2 font-mono text-xl">{{status.failure}}</div>
+          <div class="text-sm font-medium text-secondary">Total</div>
+          <div class="mt-2 font-mono text-xl">{{status.total}}</div>
         </div>
       </div>
     </div>
@@ -72,7 +76,7 @@
 
         <ng-container matColumnDef="Body">
           <th mat-header-cell *matHeaderCellDef mat-sort-header> Body </th>
-          <td mat-cell *matCellDef="let element" (click)="openDialog(element)"> {{element.Body}} </td>
+          <td mat-cell *matCellDef="let element" (click)="openDialog(element)" style="max-width: 300px;"> {{element.Body}} </td>
         </ng-container>
 
 
