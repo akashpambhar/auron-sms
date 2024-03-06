@@ -35,7 +35,8 @@ export class SmsList2Component {
   status = {
     "received" : 0,
     "sent" : 0,
-    "total" : 0
+    "total" : 0,
+    "failed": 0
   };
 
   searchTerm = ''

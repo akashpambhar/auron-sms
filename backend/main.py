@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 # from pymemcache.client import base
 from database import Base, engine
 from database import get_db
-from routers import auth, sms, sms2, sms3, users
+from routers import auth, sms, sms2, sms3, users, auth_ldap
 
 Base.metadata.create_all(bind=engine)
 
@@ -27,6 +27,7 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
+app.include_router(auth_ldap.router)
 app.include_router(sms.router)
 app.include_router(sms2.router)
 app.include_router(sms3.router)

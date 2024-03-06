@@ -45,7 +45,8 @@ def set_db_result_to_json(results, current_active_user):
     count = {
         "total" : 0,
         "received" : 0,
-        "sent" : 0
+        "sent" : 0,
+        "failed": 0
     }
 
     messages = {
@@ -67,8 +68,10 @@ def set_db_result_to_json(results, current_active_user):
 
                 if result[3] and 'received' in result[3].lower() :
                     count["received"] = count["received"] + 1
-                else :
+                elif result[3] and 'sent' in result[3].lower() :
                     count["sent"] = count["sent"] + 1
+                elif result[3] and 'failed' in result[3].lower() :
+                    count["failed"] = count["failed"] + 1
                 
         else :
             for result in results:
@@ -83,10 +86,12 @@ def set_db_result_to_json(results, current_active_user):
 
                 if result[3] and 'received' in result[3].lower() :
                     count["received"] = count["received"] + 1
-                else :
+                elif result[3] and 'sent' in result[3].lower() :
                     count["sent"] = count["sent"] + 1
+                elif result[3] and 'failed' in result[3].lower() :
+                    count["failed"] = count["failed"] + 1
                 
-    count["total"] = count["received"] + count["sent"]
+    count["total"] = len(messages["items"])
 
     messages["status"] = count
 
