@@ -37,7 +37,7 @@ def cache_get_all_sms(
         )
 
 def mask_otp_in_body(body_text):
-    if body_text and 'otp' in body_text.lower() or 'verification code' in body_text.lower() or 'apple pay' in body_text.lower() or 'مز التحقق' in body_text.lower() :
+    if body_text != None and 'otp' in body_text.lower() or 'verification code' in body_text.lower() or 'apple pay' in body_text.lower() or 'مز التحقق' in body_text.lower() :
         body_text = re.sub(r'\b\d{4}\b|\b\d{6}\b', lambda x: '*' * len(x.group()), body_text, flags=re.IGNORECASE)
     return body_text
 
@@ -66,11 +66,11 @@ def set_db_result_to_json(results, current_active_user):
                     "SentTime": result[4]
                 })
 
-                if result[3] and 'received' in result[3].lower() :
+                if result[3] != None and 'received' in result[3].lower() :
                     count["received"] = count["received"] + 1
-                elif result[3] and 'sent' in result[3].lower() :
+                elif result[3] != None and 'sent' in result[3].lower() :
                     count["sent"] = count["sent"] + 1
-                elif result[3] and 'failed' in result[3].lower() :
+                elif result[3] != None and 'failed' in result[3].lower() :
                     count["failed"] = count["failed"] + 1
 
                 
@@ -85,11 +85,11 @@ def set_db_result_to_json(results, current_active_user):
                     "SentTime": result[4]
                 })
 
-                if result[3] and 'received' in result[3].lower() :
+                if result[3] != None and 'received' in result[3].lower() :
                     count["received"] = count["received"] + 1
-                elif result[3] and 'sent' in result[3].lower() :
+                elif result[3] != None and 'sent' in result[3].lower() :
                     count["sent"] = count["sent"] + 1
-                elif result[3] and 'failed' in result[3].lower() :
+                elif result[3] != None and 'failed' in result[3].lower() :
                     count["failed"] = count["failed"] + 1
 
     count["total"] = len(messages["items"])
