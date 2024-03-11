@@ -55,15 +55,21 @@ def login(
     server = Server(LDAP_HOST, get_info=ALL)
     conn = Connection(server, LDAP_BIND_DN, LDAP_BIND_PASSWORD, auto_bind=True)
 
-    # Search for user's roles or group memberships
-    conn.search(search_base=LDAP_SEARCH_BASE_DNS,
-                search_filter=f'(sAMAccountName={username})',
-                attributes=[LDAP_SURNAME]) 
-    roles = [entry['cn'].value for entry in conn.entries]
-    
-    if 'admin' in roles:
-        print("User has admin role.")
-    else:
-        print("User roles:", roles)
+    results = []
 
-    conn.unbind()
+    with Connection(server, LDAP_BIND_DN, LDAP_BIND_PASSWORD, auto_bind=True) as conn:
+    # Search for user's roles or group memberships
+        conn.search(search_base=LDAP_SEARCH_BASE_DNS,
+                    search_filter=f'(sAMAccountName={username})',
+                    attributes=['sn'])
+        
+        results = str(conn.entries)
+        # roles = [entry['cn'].value for entry in conn.entries]
+    
+
+    return results
+    
+    # if 'admin' in roles:
+    #     print("User has admin role.")
+    # else:
+    #     print("User roles:", roles)
