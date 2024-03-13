@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 import os
-from ldap3 import Server, Connection, ALL
+from ldap3 import Server, Connection, ALL, SUBTREE
 
 router = APIRouter(prefix="/auth/ldap", tags=["auth/ldap"])
 
@@ -57,19 +57,53 @@ def login(
 
     results = []
 
-    with Connection(server, LDAP_BIND_DN, LDAP_BIND_PASSWORD, auto_bind=True) as conn:
-    # Search for user's roles or group memberships
-        conn.search(search_base=LDAP_SEARCH_BASE_DNS,
-                    search_filter=f'(sAMAccountName={username})',
-                    attributes=['sn'])
+    # with Connection(server, LDAP_BIND_DN, LDAP_BIND_PASSWORD, auto_bind=True) as conn:
+    # # Search for user's roles or group memberships
+    #     conn.search(search_base=LDAP_SEARCH_BASE_DNS,
+    #                 search_filter=f'(uid={username})',
+    #                 attributes=['sn'])
         
-        results = str(conn.entries)
-        # roles = [entry['cn'].value for entry in conn.entries]
+    #     results = str(conn.entries)
+    #     # roles = [entry['cn'].value for entry in conn.entries]
     
 
-    return results
+    # return results
     
     # if 'admin' in roles:
     #     print("User has admin role.")
     # else:
     #     print("User roles:", roles)
+
+    conn.search(LDAP_SEARCH_BASE_DNS, f'(uid={username})', SUBTREE, attributes=['sn'])
+
+    if not conn.entries:
+        print("User not found.")
+    else:
+        user_dn = conn.entries[0].entry_dn
+        results.append(user_dn)
+        print(user_dn)
+        user_roles = [] 
+
+        user_conn = Connection(server, user_dn, password)
+        if user_conn.bind():
+            print("Authentication successful.")
+            results.append("Authentication Success")
+            
+
+            # for group_dn in conn.entries[0].entry_dn:
+            #     print(group_dn)
+            # if 'cn=admin,' in str(user_dn):
+            #     user_roles.append('admin')
+            # elif 'cn=user,' in str(user_dn):
+            #     user_roles.append('user')
+            # print("User roles:", user_roles)
+            
+        else:
+            print("Authentication failed.")
+            results.append("Authentication failed")
+        
+        user_conn.unbind()
+
+    conn.unbind()
+
+    return str(results)
