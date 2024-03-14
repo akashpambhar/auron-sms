@@ -2,6 +2,9 @@ from fastapi import APIRouter
 import os
 from ldap3 import Server, Connection, ALL, SUBTREE
 
+from fastapi import FastAPI, Depends, HTTPException
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+
 router = APIRouter(prefix="/auth/ldap", tags=["auth/ldap"])
 
 # SERVER
@@ -107,3 +110,38 @@ def login(
     conn.unbind()
 
     return str(results)
+
+
+def LDAP_AUTH(domain,username,password):
+    didConnect=False
+    try:
+        # server = Server(f"ldap://{domain}", get_info=ALL)
+        server = Server(LDAP_HOST, get_info=ALL)
+
+        conn = Connection(server, user=f"{username}@{domain}", password=password, auto_bind=True)
+        
+        conn.bind()
+
+        print("AD Connected")
+
+        if conn.result['result'] == 0:
+            print("Authentication successful")
+            didConnect = True
+    except:
+            print("Authentication failed")
+    finally:
+        try:
+            conn.unbind()
+        except:
+            ''
+    return didConnect
+
+@router.get("/ad")
+def login_ad(
+    username : str = None,
+    password: str = None,
+    domain: str = None
+):
+    if not LDAP_AUTH(domain, username, password):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    return username
