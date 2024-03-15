@@ -124,6 +124,12 @@ def LDAP_AUTH(domain,username,password):
 
         print("AD Connected")
 
+        print("RESULT")
+        print(conn.result)
+
+        print("AS STRING")
+        print(str(conn.result))
+
         if conn.result['result'] == 0:
             print("Authentication successful")
             didConnect = True
