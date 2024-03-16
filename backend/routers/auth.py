@@ -19,11 +19,10 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
-def get_auth_scheme():
-    return OAuth2PasswordBearer(tokenUrl="/auth/signin")
+db_oauth2_schema = OAuth2PasswordBearer(
+    tokenUrl="/auth/signin", scheme_name="db_oauth2_schema"
+)
 
-
-oauth2_scheme = get_auth_scheme()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
@@ -49,7 +48,8 @@ def login_for_access_token(
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.username, "role": user.role_id}, expires_delta=access_token_expires
+        data={"sub": user.username, "role": user.role_id},
+        expires_delta=access_token_expires,
     )
     return TokenSchema.Token(access_token=access_token, token_type="bearer")
 
@@ -122,7 +122,7 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
 
 
 def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)],
+    token: Annotated[str, Depends(db_oauth2_schema)],
     db: Annotated[Session, Depends(get_db)],
 ):
     credentials_exception = HTTPException(
@@ -155,7 +155,11 @@ def get_current_active_user(
 def get_current_admin_user(
     current_user: Annotated[UserSchema.User, Depends(get_current_active_user)]
 ):
-    if 1 != current_user.role_id or current_user.disabled is None or current_user.disabled == True:
+    if (
+        1 != current_user.role_id
+        or current_user.disabled is None
+        or current_user.disabled == True
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have access to this resource",
@@ -166,7 +170,11 @@ def get_current_admin_user(
 def get_current_normal_user(
     current_user: Annotated[UserSchema.User, Depends(get_current_active_user)]
 ):
-    if 2 != current_user.role_id or current_user.disabled is None or current_user.disabled == True:
+    if (
+        2 != current_user.role_id
+        or current_user.disabled is None
+        or current_user.disabled == True
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have access to this resource",
@@ -177,32 +185,42 @@ def get_current_normal_user(
 def get_current_other_user(
     current_user: Annotated[UserSchema.User, Depends(get_current_active_user)]
 ):
-    if 3 != current_user.role_id or current_user.disabled is None or current_user.disabled == True:
+    if (
+        3 != current_user.role_id
+        or current_user.disabled is None
+        or current_user.disabled == True
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have access to this resource",
         )
     return current_user
+
 
 def get_current_admin_and_normal_user(
     current_user: Annotated[UserSchema.User, Depends(get_current_active_user)]
 ):
-    if current_user.role_id not in [1,2] or current_user.disabled is None or current_user.disabled == True:
+    if (
+        current_user.role_id not in [1, 2]
+        or current_user.disabled is None
+        or current_user.disabled == True
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have access to this resource",
         )
     return current_user
 
+
 def authenticate_user(username: str, password: str, db: Session):
     user = get_user(username, db)
-    
+
     if not user:
         return False
 
     if not verify_password(password, user.password):
         return False
-    
+
     if user.disabled == True or user.disabled is None:
         return False
 
