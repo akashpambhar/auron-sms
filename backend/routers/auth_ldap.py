@@ -27,13 +27,6 @@ LDAP_BIND_PASSWORD = os.getenv("LDAP_BIND_PASSWORD")
 LDAP_SEARCH_FILTER = os.getenv("LDAP_SEARCH_FILTER")
 LDAP_SEARCH_BASE_DNS = os.getenv("LDAP_SEARCH_BASE_DNS")
 
-# SERVER ATTRIBUTES
-LDAP_NAME = os.getenv("LDAP_NAME")
-LDAP_SURNAME = os.getenv("LDAP_SURNAME")
-LDAP_USERNAME = os.getenv("LDAP_USERNAME")
-LDAP_MEMBER_OF = os.getenv("LDAP_MEMBER_OF")
-LDAP_EMAIL = os.getenv("LDAP_EMAIL")
-
 # SERVER GROUP MAPPINGS
 LDAP_ADMINS_GROUP = os.getenv("LDAP_ADMINS_GROUP")
 LDAP_USERS_GROUP = os.getenv("LDAP_USERS_GROUP")
@@ -58,8 +51,7 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
 
 def get_user(username: str):
     user = UserSchema.UserInDB(
-        username=None,
-        role_id=-1,
+        user_id=-1, username="", email="", role_id=-1, password=""
     )
 
     try:
@@ -68,7 +60,7 @@ def get_user(username: str):
             server, user=LDAP_BIND_DN, password=LDAP_BIND_PASSWORD, auto_bind=True
         )
 
-        search_filter = f"(&(objectclass=user)(sAMAccountName={username}))"
+        search_filter = LDAP_SEARCH_FILTER.replace("%s", username)
         conn.search(
             search_base=LDAP_SEARCH_BASE_DNS,
             search_filter=search_filter,
@@ -77,6 +69,7 @@ def get_user(username: str):
         )
 
         if conn.entries:
+            user.username = username
             roles = [str(role) for role in conn.entries[0].memberOf]
 
             print("User roles:", roles)
@@ -168,8 +161,7 @@ def get_current_admin_and_normal_user(
 
 def authenticate_user(username, password):
     user = UserSchema.UserInDB(
-        username=None,
-        role_id=-1,
+        user_id=-1, username="", email="", role_id=-1, password=""
     )
 
     try:

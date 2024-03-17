@@ -8,9 +8,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from passlib.context import CryptContext
 from jose import JWTError, jwt
-from models import User, Role
+from models import User
 from schemas import UserSchema, TokenSchema
-from database import SessionLocal
+from database import get_db
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -24,14 +24,6 @@ db_oauth2_schema = OAuth2PasswordBearer(
 )
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 @router.post("/signin")
@@ -55,11 +47,11 @@ def login_for_access_token(
 
 
 @router.post("/signup")
-def signup(userSignup: UserSchema.UserSignUp, db: Session = Depends(get_db)):
+def signup(user_signup: UserSchema.UserSignUp, db: Session = Depends(get_db)):
     existing_user = db.execute(
         select(User.User).where(
-            (User.User.username == userSignup.username)
-            | (User.User.email == userSignup.email)
+            (User.User.username == user_signup.username)
+            | (User.User.email == user_signup.email)
         )
     ).first()
 
@@ -69,7 +61,7 @@ def signup(userSignup: UserSchema.UserSignUp, db: Session = Depends(get_db)):
             detail="Username or email already exists",
         )
 
-    user = User.User(**userSignup.model_dump())
+    user = User.User(**user_signup.model_dump())
     user.password = get_password_hash(user.password)
 
     try:
