@@ -1,5 +1,5 @@
 from fastapi import Depends, APIRouter, HTTPException, status, BackgroundTasks
-from database import SessionLocal
+from database import get_db
 from typing import Annotated
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from schemas import UserSchema, ForgotPasswordSchema
 from models import User, Role, PasswordToken
 from routers import auth
-from sqlalchemy import select, join, text
+from sqlalchemy import select, join, text, delete
 import smtplib
 from email.message import EmailMessage
 import os
@@ -24,13 +24,6 @@ MAIL_USERNAME = os.getenv("MAIL_USERNAME")
 MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
 UI_URL = os.getenv("UI_URL")
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
 
 def get_password_hash(password):
     return pwd_context.hash(password)
@@ -39,10 +32,14 @@ def get_password_hash(password):
 @router.get("")
 def get_users(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_user)],
-    db: Annotated[Session, Depends(get_db)]
+    db: Annotated[Session, Depends(get_db)],
 ):
     join_condition = User.User.role_id == Role.Role.role_id
-    query = select(User.User).select_from(join(User.User, Role.Role, join_condition)).where(User.User.username != current_user.username and User.User.role_id != 1)
+    query = (
+        select(User.User)
+        .select_from(join(User.User, Role.Role, join_condition))
+        .where(User.User.username != current_user.username and User.User.role_id != 1)
+    )
 
     results = db.execute(query).fetchall()
 
@@ -64,7 +61,8 @@ def get_users(
 @router.get("/{user_id}")
 def get_user_by_user_id(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_user)],
-    user_id: str, db: Annotated[Session, Depends(get_db)]
+    user_id: str,
+    db: Annotated[Session, Depends(get_db)],
 ):
     existing_user = db.execute(
         select(User.User).where(User.User.user_id == user_id)
@@ -82,7 +80,8 @@ def get_user_by_user_id(
 @router.get("/search/{username}")
 def get_user_by_user_username(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_user)],
-    username: str, db: Annotated[Session, Depends(get_db)]
+    username: str,
+    db: Annotated[Session, Depends(get_db)],
 ):
     native_sql_query = text(
         f"""
@@ -121,7 +120,8 @@ def get_user_by_user_username(
 @router.post("")
 def add_user(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_user)],
-    user_create: UserSchema.UserCreate, db: Annotated[Session, Depends(get_db)]
+    user_create: UserSchema.UserCreate,
+    db: Annotated[Session, Depends(get_db)],
 ):
     existing_user = db.execute(
         select(User.User).where(
@@ -155,7 +155,8 @@ def add_user(
 @router.put("")
 def edit_user(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_user)],
-    user_edit: UserSchema.UserInDB, db: Annotated[Session, Depends(get_db)]
+    user_edit: UserSchema.UserInDB,
+    db: Annotated[Session, Depends(get_db)],
 ):
     db_user = db.execute(
         select(User.User).where(User.User.user_id == user_edit.user_id)
@@ -180,26 +181,34 @@ def edit_user(
 @router.delete("/{user_id}")
 def delete_user_by_user_id(
     current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_user)],
-    user_id: str, db: Annotated[Session, Depends(get_db)]
+    user_id: str,
+    db: Annotated[Session, Depends(get_db)],
 ):
     existing_user = db.execute(
         select(User.User).where(User.User.user_id == user_id)
-    ).first()[0]
+    ).first()
 
     if existing_user is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User not found",
         )
-    
+
+    existing_user = existing_user[0]
+
+    db.execute(
+        delete(PasswordToken.PasswordToken).where(
+            PasswordToken.PasswordToken.user_id == user_id
+        )
+    )
+
     db.delete(existing_user)
     db.commit()
 
     return "User Deleted successfully"
 
-def get_user_by_email(
-    email: str, db: Annotated[Session, Depends(get_db)]
-):
+
+def get_user_by_email(email: str, db: Annotated[Session, Depends(get_db)]):
     existing_user = db.execute(
         select(User.User).where(User.User.email == email)
     ).first()
@@ -211,6 +220,7 @@ def get_user_by_email(
         )
 
     return existing_user[0]
+
 
 def add_password_reset_token(user_id, token, expiry_date, db):
     password_token = PasswordToken.PasswordToken()
@@ -230,10 +240,13 @@ def add_password_reset_token(user_id, token, expiry_date, db):
             detail=f"Error creating user: {str(e)}",
         )
 
+
 def verify_reset_token(token, db):
-    
+
     existing_password_token = db.execute(
-        select(PasswordToken.PasswordToken).where(PasswordToken.PasswordToken.token == token)
+        select(PasswordToken.PasswordToken).where(
+            PasswordToken.PasswordToken.token == token
+        )
     ).first()
 
     if existing_password_token is None:
@@ -241,8 +254,8 @@ def verify_reset_token(token, db):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="existing_password_token not found",
         )
-    
-    if existing_password_token[0].expiry_date < datetime.utcnow() :
+
+    if existing_password_token[0].expiry_date < datetime.utcnow():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Token expired",
@@ -250,10 +263,9 @@ def verify_reset_token(token, db):
 
     return existing_password_token[0]
 
+
 def update_user_password(user_id, new_password, db):
-    db_user = db.execute(
-        select(User.User).where(User.User.user_id == user_id)
-    ).first()
+    db_user = db.execute(select(User.User).where(User.User.user_id == user_id)).first()
 
     if not db_user:
         raise HTTPException(status_code=404, detail="user not found")
@@ -266,9 +278,12 @@ def update_user_password(user_id, new_password, db):
     db.refresh(db_user[0])
     return "Password updated successfully"
 
+
 def delete_password_token(token_id, db):
     existing_password_token = db.execute(
-        select(PasswordToken.PasswordToken).where(PasswordToken.PasswordToken.token_id == token_id)
+        select(PasswordToken.PasswordToken).where(
+            PasswordToken.PasswordToken.token_id == token_id
+        )
     ).first()
 
     if existing_password_token is None:
@@ -276,47 +291,62 @@ def delete_password_token(token_id, db):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Password Token not found",
         )
-    
+
     db.delete(existing_password_token[0])
     db.commit()
 
+
 def send_reset_email(email: str, token: str):
     msg = EmailMessage()
-    msg.set_content(f"Please click on the link to reset your password: {UI_URL}/reset-password/{token}")
-    msg['Subject'] = "Reset Your Password"
-    msg['From'] = MAIL_USERNAME
-    msg['To'] = email
+    msg.set_content(
+        f"Please click on the link to reset your password: {UI_URL}/reset-password/{token}"
+    )
+    msg["Subject"] = "Reset Your Password"
+    msg["From"] = MAIL_USERNAME
+    msg["To"] = email
 
     with smtplib.SMTP_SSL(MAIL_SERVER, MAIL_PORT) as smtp:
         smtp.login(MAIL_USERNAME, MAIL_PASSWORD)
         smtp.send_message(msg)
 
+
 @router.post("/forgot-password")
 def forgot_password(
     background_tasks: BackgroundTasks,
-    forgot_password : ForgotPasswordSchema.ForgotPassword,
-    db: Annotated[Session, Depends(get_db)]):
+    forgot_password: ForgotPasswordSchema.ForgotPassword,
+    db: Annotated[Session, Depends(get_db)],
+):
     user = get_user_by_email(forgot_password.email, db)
-    
+
     reset_token = secrets.token_urlsafe()
-    
+
     expiry_date = datetime.utcnow() + timedelta(hours=1)
-    
-    add_password_reset_token(user_id=user.user_id, token=reset_token, expiry_date=expiry_date, db=db)
-    
+
+    add_password_reset_token(
+        user_id=user.user_id, token=reset_token, expiry_date=expiry_date, db=db
+    )
+
     background_tasks.add_task(send_reset_email, forgot_password.email, reset_token)
-    return {"message": "If an account with this email was found, we've sent a link to reset your password."}
+    return {
+        "message": "If an account with this email was found, we've sent a link to reset your password."
+    }
+
 
 @router.post("/reset-password")
-def reset_password(reset_password : ForgotPasswordSchema.ResetPassword, db: Annotated[Session, Depends(get_db)]):
-    
+def reset_password(
+    reset_password: ForgotPasswordSchema.ResetPassword,
+    db: Annotated[Session, Depends(get_db)],
+):
+
     existing_password_token = verify_reset_token(reset_password.token, db)
 
     if not existing_password_token.user_id:
         raise HTTPException(status_code=400, detail="Invalid or expired token")
-    
-    update_user_password(existing_password_token.user_id, reset_password.new_password, db)
+
+    update_user_password(
+        existing_password_token.user_id, reset_password.new_password, db
+    )
 
     delete_password_token(existing_password_token.token_id, db)
-    
+
     return {"message": "Your password has been reset successfully."}
