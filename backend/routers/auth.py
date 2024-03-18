@@ -1,8 +1,7 @@
-from fastapi import Depends, HTTPException, status, APIRouter
+from fastapi import Depends, HTTPException, status, APIRouter, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from typing import Annotated, Union
 from datetime import datetime, timedelta, timezone
-import os
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -11,27 +10,39 @@ from jose import JWTError, jwt
 from models import User
 from schemas import UserSchema, TokenSchema
 from database import get_db
+from ldap3 import Server, Connection, ALL, SUBTREE
+from utils.Utils import (
+    SECRET_KEY,
+    ALGORITHM,
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    ENUM_DATABASE,
+    ENUM_ACTIVE_DIRECTORY,
+    LDAP_HOST,
+    LDAP_PORT,
+    LDAP_DOMAIN,
+    LDAP_USE_SSL,
+    LDAP_START_TLS,
+    LDAP_SSL_SKIP_VERIFY,
+    LDAP_BIND_DN,
+    LDAP_BIND_PASSWORD,
+    LDAP_SEARCH_FILTER,
+    LDAP_SEARCH_BASE_DNS,
+    LDAP_ADMINS_GROUP,
+    LDAP_USERS_GROUP,
+    LDAP_OTHERS_GROUP,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-
-SECRET_KEY = os.getenv("SECRET")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-
-db_oauth2_schema = OAuth2PasswordBearer(
-    tokenUrl="/auth/signin", scheme_name="db_oauth2_schema"
-)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 @router.post("/signin")
-def login_for_access_token(
+def login_for_access_token_using_database(
     user_signin: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Annotated[Session, Depends(get_db)],
 ) -> TokenSchema.Token:
-    user = authenticate_user(user_signin.username, user_signin.password, db)
+    user = authenticate_db_user(user_signin.username, user_signin.password, db)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -40,7 +51,34 @@ def login_for_access_token(
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.username, "role": user.role_id},
+        data={
+            "sub": user.username,
+            "role": user.role_id,
+            "auth_mode": ENUM_DATABASE,
+        },
+        expires_delta=access_token_expires,
+    )
+    return TokenSchema.Token(access_token=access_token, token_type="bearer")
+
+
+@router.post("/ad/signin")
+def login_for_access_token_using_ad(
+    user_signin: Annotated[OAuth2PasswordRequestForm, Depends()]
+) -> TokenSchema.Token:
+    user = authenticate_ad_user(user_signin.username, user_signin.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={
+            "sub": user.username,
+            "role": user.role_id,
+            "auth_mode": ENUM_ACTIVE_DIRECTORY,
+        },
         expires_delta=access_token_expires,
     )
     return TokenSchema.Token(access_token=access_token, token_type="bearer")
@@ -85,13 +123,13 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
-def get_user(username: str, db: Session):
+def get_db_user(username: str, db: Session):
     user = db.execute(select(User.User).where(User.User.username == username)).first()[
         0
     ]
 
     if user:
-        user_dict = UserSchema.UserInDB(
+        return UserSchema.UserInDB(
             user_id=user.user_id,
             username=user.username,
             password=user.password,
@@ -99,7 +137,52 @@ def get_user(username: str, db: Session):
             disabled=user.disabled,
             role_id=user.role_id,
         )
-        return UserSchema.UserInDB(**user_dict.model_dump())
+
+
+def get_ad_user(username: str):
+    user = UserSchema.UserInDB(
+        user_id=-1, username="", email="", role_id=-1, password=""
+    )
+
+    try:
+        server = Server(LDAP_HOST, int(LDAP_PORT), get_info=ALL)
+        conn = Connection(
+            server, user=LDAP_BIND_DN, password=LDAP_BIND_PASSWORD, auto_bind=True
+        )
+
+        search_filter = LDAP_SEARCH_FILTER.replace("%s", username)
+        conn.search(
+            search_base=LDAP_SEARCH_BASE_DNS,
+            search_filter=search_filter,
+            search_scope=SUBTREE,
+            attributes=["memberOf"],
+        )
+
+        if conn.entries:
+            user.username = username
+            roles = [str(role) for role in conn.entries[0].memberOf]
+
+            print("User roles:", roles)
+
+            if LDAP_ADMINS_GROUP in roles:
+                user.role_id = 1
+            elif LDAP_USERS_GROUP in roles:
+                user.role_id = 2
+            elif LDAP_OTHERS_GROUP in roles:
+                user.role_id = 3
+            else:
+                print("Role not found for ", username)
+                return None
+        else:
+            print("User not found.")
+            return None
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
+    finally:
+        conn.unbind()
+
+    return user
 
 
 def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None):
@@ -114,23 +197,31 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
 
 
 def get_current_user(
-    token: Annotated[str, Depends(db_oauth2_schema)],
+    req: Request,
     db: Annotated[Session, Depends(get_db)],
 ):
+    token = req.headers["authorization"].split(" ")[1]
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
+        auth_mode: str = payload.get("auth_mode")
         if username is None:
             raise credentials_exception
-        token_data = TokenSchema.TokenData(username=username)
     except JWTError:
         raise credentials_exception
-    user = get_user(username=token_data.username, db=db)
+
+    if auth_mode == ENUM_DATABASE:
+        user = get_db_user(username, db)
+    elif auth_mode == ENUM_ACTIVE_DIRECTORY:
+        user = get_ad_user(username)
+
     if user is None:
         raise credentials_exception
     return user
@@ -204,8 +295,8 @@ def get_current_admin_and_normal_user(
     return current_user
 
 
-def authenticate_user(username: str, password: str, db: Session):
-    user = get_user(username, db)
+def authenticate_db_user(username: str, password: str, db: Session):
+    user = get_db_user(username, db)
 
     if not user:
         return False
@@ -219,8 +310,64 @@ def authenticate_user(username: str, password: str, db: Session):
     return user
 
 
-@router.get("/me")
-def read_users_me(
-    current_active_user: Annotated[UserSchema.User, Depends(get_current_active_user)]
-):
-    return current_active_user
+def authenticate_ad_user(username, password):
+    user = UserSchema.UserInDB(
+        user_id=-1, username="", email="", role_id=-1, password=""
+    )
+
+    try:
+        server = Server(LDAP_HOST, int(LDAP_PORT), get_info=ALL)
+
+        user_conn = Connection(
+            server, user=f"{username}@{LDAP_DOMAIN}", password=password, auto_bind=True
+        )
+
+        user_conn.bind()
+
+        if user_conn.result["result"] == 0:
+            print("Authentication successful")
+            user.username = username
+
+            conn = Connection(
+                server, user=LDAP_BIND_DN, password=LDAP_BIND_PASSWORD, auto_bind=True
+            )
+
+            search_filter = LDAP_SEARCH_FILTER.replace("%s", username)
+            conn.search(
+                search_base=LDAP_SEARCH_BASE_DNS,
+                search_filter=search_filter,
+                search_scope=SUBTREE,
+                attributes=["memberOf"],
+            )
+
+            if conn.entries:
+                roles = [str(role) for role in conn.entries[0].memberOf]
+
+                print("User roles:", roles)
+
+                if LDAP_ADMINS_GROUP in roles:
+                    user.role_id = 1
+                elif LDAP_USERS_GROUP in roles:
+                    user.role_id = 2
+                elif LDAP_OTHERS_GROUP in roles:
+                    user.role_id = 3
+                else:
+                    print("Role not found for ", username)
+                    return None
+            else:
+                print("User not found.")
+                return None
+        else:
+            print("Authentication failed")
+            return None
+
+    except:
+        print("Authentication failed")
+        return None
+    finally:
+        try:
+            user_conn.unbind()
+            conn.unbind()
+        except:
+            """"""
+    return user

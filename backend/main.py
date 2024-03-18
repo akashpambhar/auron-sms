@@ -8,7 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 from database import Base, engine
 from database import get_db
-from routers import auth, sms, sms2, sms3, users, auth_ldap
+from routers import auth, sms, sms2, sms3, users
 
 Base.metadata.create_all(bind=engine)
 
@@ -23,7 +23,7 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
-app.include_router(auth_ldap.router)
+# app.include_router(auth_ldap.router)
 app.include_router(sms.router)
 app.include_router(sms2.router)
 app.include_router(sms3.router)
