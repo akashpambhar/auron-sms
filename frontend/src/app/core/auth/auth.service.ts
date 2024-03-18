@@ -40,7 +40,7 @@ export class AuthService {
    */
   forgotPassword(email: string): Observable<any> {
     let url = `${this.configService.getEnvConfig().API_URL}/users/forgot-password`;
-    return this._httpClient.post(url, {"email": email});
+    return this._httpClient.post(url, { "email": email });
   }
 
   /**
@@ -48,9 +48,9 @@ export class AuthService {
    *
    * @param password
    */
-  resetPassword(token:string, password: string): Observable<any> {
+  resetPassword(token: string, password: string): Observable<any> {
     let url = `${this.configService.getEnvConfig().API_URL}/users/reset-password`;
-    return this._httpClient.post(url, {"token": token, "new_password": password});
+    return this._httpClient.post(url, { "token": token, "new_password": password });
   }
 
   /**
@@ -58,7 +58,7 @@ export class AuthService {
    *
    * @param credentials
    */
-  signIn(credentials: { username: string; password: string }): Observable<any> {
+  signIn(credentials: { username: string; password: string }, authMode: string): Observable<any> {
     // Throw error, if the user is already logged in
     if (this._authenticated) {
       return throwError('User is already logged in.');
@@ -70,7 +70,13 @@ export class AuthService {
 
     let url = `${this.configService.getEnvConfig().API_URL}/auth`;
 
-    return this._httpClient.post(url + '/signin', body.toString(), {
+    let signInUrl = url + '/signin';
+
+    if (authMode === 'active_directory') {
+      signInUrl = url + '/ad/signin';
+    }
+
+    return this._httpClient.post(signInUrl, body.toString(), {
       headers: new HttpHeaders({
         'Content-Type': 'application/x-www-form-urlencoded',
       }),
@@ -156,7 +162,7 @@ export class AuthService {
    * Check the authentication status
    */
   check(): Observable<boolean> {
-      // Check if the user is logged in
+    // Check if the user is logged in
     if (this._authenticated) {
       return of(true);
     }

@@ -10,19 +10,18 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ActivatedRoute, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { fuseAnimations } from '@fuse/animations';
 import { FuseAlertComponent, FuseAlertType } from '@fuse/components/alert';
-// import { AuthService } from 'app/modules/services/auth.service';
 import { AuthService } from 'app/core/auth/auth.service';
 import { UserService } from 'app/core/user/user.service';
 
 @Component({
-  selector: 'auth-sign-in',
-  templateUrl: './sign-in.component.html',
+  selector: 'ad-auth-sign-in',
+  templateUrl: './ad-sign-in.component.html',
   // encapsulation: ViewEncapsulation.None,
   animations: fuseAnimations,
   standalone: true,
   imports: [RouterLink, FuseAlertComponent, NgIf, FormsModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, MatCheckboxModule, MatProgressSpinnerModule, RouterOutlet],
 })
-export class AuthSignInComponent implements OnInit {
+export class AdAuthSignInComponent implements OnInit {
   @ViewChild('signInNgForm') signInNgForm: NgForm;
 
   alert: { type: FuseAlertType; message: string } = {
@@ -63,10 +62,10 @@ export class AuthSignInComponent implements OnInit {
     this.showAlert = false;
 
     // Sign in
-    this._authService.signIn(this.signInForm.value, 'database').subscribe({
+    this._authService.signIn(this.signInForm.value, 'active_directory').subscribe({
       next: (res: any) => {
         this.signInForm.enable();
-        
+
         this._userService.user$.subscribe((user: any) => {
           if (user.role === 1) {
             this._router.navigateByUrl('/admin-dashboard');

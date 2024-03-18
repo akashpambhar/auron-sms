@@ -8,12 +8,7 @@
       </div>
 
       <!-- Title -->
-      <div class="mt-8 text-4xl font-extrabold tracking-tight leading-tight">Sign in</div>
-      <div class="flex items-baseline mt-0.5 font-medium">
-        <div>Don't have an account?</div>
-        <a class="ml-1 text-primary-500 hover:underline" [routerLink]="['/sign-up']">Sign up
-        </a>
-      </div>
+      <div class="mt-8 text-4xl font-extrabold tracking-tight leading-tight">Active Directory <br> Sign In</div>
 
       <!-- Alert -->
       <fuse-alert class="mt-8" *ngIf="showAlert" [appearance]="'outline'" [showIcon]="false" [type]="alert.type"
@@ -50,18 +45,11 @@
           </mat-error>
         </mat-form-field>
 
-        <!-- Actions -->
-        <div class="inline-flex items-center justify-between w-full mt-1.5">
-          <a class="text-md font-medium text-primary-500 hover:underline" [routerLink]="['/forgot-password']">Forgot
-            password?
-          </a>
-        </div>
-
         <!-- Submit button -->
         <button class="fuse-mat-button-large w-full mt-6" mat-flat-button [color]="'primary'"
           [disabled]="signInForm.disabled" (click)="signIn()">
           <span *ngIf="!signInForm.disabled">
-            Sign in
+            AD Sign in
           </span>
           <mat-progress-spinner *ngIf="signInForm.disabled" [diameter]="24"
             [mode]="'indeterminate'"></mat-progress-spinner>
@@ -70,13 +58,13 @@
         <!-- Separator -->
         <div class="flex items-center mt-8">
           <div class="flex-auto mt-px border-t"></div>
-          <div class="mx-2 text-secondary">Or continue with</div>
+          <div class="mx-2 text-secondary">Or back to</div>
           <div class="flex-auto mt-px border-t"></div>
         </div>
 
-        <!-- AD Sign In button -->
+        <!-- Sign In button -->
         <button class="fuse-mat-button-large w-full mt-6" mat-stroked-button [color]="'primary'" type="button"
-          routerLink="/ad-sign-in">Active Directory
+          routerLink="/sign-in">Standard Sign In
         </button>
       </form>
     </div>
@@ -102,35 +90,5 @@
       </defs>
       <rect width="220" height="192" fill="url(#837c3e70-6c3a-44e6-8854-cc48c737b659)"></rect>
     </svg>
-    <!-- @formatter:on -->
-    <!-- Content -->
-    <!-- <div class="z-10 relative w-full max-w-2xl">
-      <div class="text-7xl font-bold leading-none text-gray-100">
-        <div>Welcome to</div>
-        <div>our community</div>
-      </div>
-      <div class="mt-6 text-lg tracking-tight leading-6 text-gray-400">
-        Fuse helps developers to build organized and well coded dashboards full of beautiful and rich modules.
-        Join us and start building your application today.
-      </div>
-      <div class="flex items-center mt-8">
-        <div class="flex flex-0 items-center -space-x-1.5">
-          <img
-            class="flex-0 w-10 h-10 rounded-full ring-4 ring-offset-1 ring-gray-800 ring-offset-gray-800 object-cover"
-            src="assets/images/avatars/female-18.jpg">
-          <img
-            class="flex-0 w-10 h-10 rounded-full ring-4 ring-offset-1 ring-gray-800 ring-offset-gray-800 object-cover"
-            src="assets/images/avatars/female-11.jpg">
-          <img
-            class="flex-0 w-10 h-10 rounded-full ring-4 ring-offset-1 ring-gray-800 ring-offset-gray-800 object-cover"
-            src="assets/images/avatars/male-09.jpg">
-          <img
-            class="flex-0 w-10 h-10 rounded-full ring-4 ring-offset-1 ring-gray-800 ring-offset-gray-800 object-cover"
-            src="assets/images/avatars/male-16.jpg">
-        </div>
-        <div class="ml-4 font-medium tracking-tight text-gray-400">More than 17k people joined us, it's your
-          turn</div>
-      </div>
-    </div> -->
   </div>
 </div>
