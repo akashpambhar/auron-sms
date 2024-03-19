@@ -18,8 +18,8 @@ import { AdAuthSignInComponent } from './modules/auth/ad-sign-in/ad-sign-in.comp
 export const appRoutes: Route[] = [
 
   // // Redirect empty path to '/example'
-  { path: '', pathMatch: 'full', redirectTo: 'sign-in' },
-  { path: 'reset-password', pathMatch: 'full', redirectTo: 'sign-in' },
+  { path: '', pathMatch: 'full', redirectTo: 'ad-sign-in' },
+  { path: 'reset-password', pathMatch: 'full', redirectTo: 'ad-sign-in' },
 
   // // Redirect signed-in user to the '/example'
   // //

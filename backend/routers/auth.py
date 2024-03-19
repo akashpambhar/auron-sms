@@ -224,15 +224,15 @@ def get_current_user(
 
     if user is None:
         raise credentials_exception
-    return user
+    return (user, auth_mode)
 
 
 def get_current_active_user(
     current_user: Annotated[UserSchema.User, Depends(get_current_user)]
 ):
-    if current_user.disabled:
+    if current_user[1] == ENUM_DATABASE and (current_user[0].disabled == None or current_user[0].disabled == True):
         raise HTTPException(status_code=400, detail="Inactive user")
-    return current_user
+    return current_user[0]
 
 
 def get_current_admin_user(
@@ -240,8 +240,6 @@ def get_current_admin_user(
 ):
     if (
         1 != current_user.role_id
-        or current_user.disabled is None
-        or current_user.disabled == True
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -255,8 +253,6 @@ def get_current_normal_user(
 ):
     if (
         2 != current_user.role_id
-        or current_user.disabled is None
-        or current_user.disabled == True
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -270,8 +266,6 @@ def get_current_other_user(
 ):
     if (
         3 != current_user.role_id
-        or current_user.disabled is None
-        or current_user.disabled == True
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -285,8 +279,6 @@ def get_current_admin_and_normal_user(
 ):
     if (
         current_user.role_id not in [1, 2]
-        or current_user.disabled is None
-        or current_user.disabled == True
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
