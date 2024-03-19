@@ -47,7 +47,7 @@ export class AuthSignOutComponent implements OnInit, OnDestroy
             .pipe(
                 finalize(() =>
                 {
-                    this._router.navigate(['sign-in']);
+                    this._router.navigate(['ad-sign-in']);
                 }),
                 takeWhile(() => this.countdown > 0),
                 takeUntil(this._unsubscribeAll),

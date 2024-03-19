@@ -1,12 +1,12 @@
 from fastapi import Depends, HTTPException, status, APIRouter, Request
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated, Union
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from passlib.context import CryptContext
-from jose import JWTError, jwt
+from jose import jwt
 from models import User
 from schemas import UserSchema, TokenSchema
 from database import get_db
@@ -20,9 +20,6 @@ from utils.Utils import (
     LDAP_HOST,
     LDAP_PORT,
     LDAP_DOMAIN,
-    LDAP_USE_SSL,
-    LDAP_START_TLS,
-    LDAP_SSL_SKIP_VERIFY,
     LDAP_BIND_DN,
     LDAP_BIND_PASSWORD,
     LDAP_SEARCH_FILTER,
@@ -30,6 +27,9 @@ from utils.Utils import (
     LDAP_ADMINS_GROUP,
     LDAP_USERS_GROUP,
     LDAP_OTHERS_GROUP,
+    credentials_exception,
+    decode_jwt,
+    insert_audit_trail
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -39,6 +39,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 @router.post("/signin")
 def login_for_access_token_using_database(
+    request: Request,
     user_signin: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Annotated[Session, Depends(get_db)],
 ) -> TokenSchema.Token:
@@ -58,11 +59,15 @@ def login_for_access_token_using_database(
         },
         expires_delta=access_token_expires,
     )
+    
+    insert_audit_trail(request.client.host, request.url.path, request.method, request.query_params.__str__(), user.username, ENUM_DATABASE)
+
     return TokenSchema.Token(access_token=access_token, token_type="bearer")
 
 
 @router.post("/ad/signin")
 def login_for_access_token_using_ad(
+    request: Request,
     user_signin: Annotated[OAuth2PasswordRequestForm, Depends()]
 ) -> TokenSchema.Token:
     user = authenticate_ad_user(user_signin.username, user_signin.password)
@@ -81,11 +86,18 @@ def login_for_access_token_using_ad(
         },
         expires_delta=access_token_expires,
     )
+
+    insert_audit_trail(request.client.host, request.url.path, request.method, request.query_params.__str__(), user.username, ENUM_ACTIVE_DIRECTORY)
+
     return TokenSchema.Token(access_token=access_token, token_type="bearer")
 
 
 @router.post("/signup")
-def signup(user_signup: UserSchema.UserSignUp, db: Session = Depends(get_db)):
+def signup(
+    request: Request,
+    user_signup: UserSchema.UserSignUp,
+    db: Session = Depends(get_db)
+):
     existing_user = db.execute(
         select(User.User).where(
             (User.User.username == user_signup.username)
@@ -105,7 +117,7 @@ def signup(user_signup: UserSchema.UserSignUp, db: Session = Depends(get_db)):
     try:
         db.add(user)
         db.commit()
-        db.refresh(user)
+        insert_audit_trail(request.client.host, request.url.path, request.method, request.query_params.__str__(), user.username, ENUM_DATABASE)
         return {"message": "User created successfully"}
     except IntegrityError as e:
         db.rollback()
@@ -202,20 +214,7 @@ def get_current_user(
 ):
     token = req.headers["authorization"].split(" ")[1]
 
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        auth_mode: str = payload.get("auth_mode")
-        if username is None:
-            raise credentials_exception
-    except JWTError:
-        raise credentials_exception
+    username, auth_mode = decode_jwt(token)
 
     if auth_mode == ENUM_DATABASE:
         user = get_db_user(username, db)
@@ -228,7 +227,7 @@ def get_current_user(
 
 
 def get_current_active_user(
-    current_user: Annotated[UserSchema.User, Depends(get_current_user)]
+    current_user: Annotated[tuple, Depends(get_current_user)]
 ):
     if current_user[1] == ENUM_DATABASE and (current_user[0].disabled == None or current_user[0].disabled == True):
         raise HTTPException(status_code=400, detail="Inactive user")

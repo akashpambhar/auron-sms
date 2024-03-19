@@ -1,15 +1,11 @@
 <!-- Button -->
-<button
-    mat-icon-button
-    [matMenuTriggerFor]="userActions">
-    <span class="relative">
+<!-- <button mat-icon-button>
+    <span class="relative"> -->
         <!-- <img
             class="w-7 h-7 rounded-full"
             *ngIf="showAvatar && user.avatar"
             [src]="user.avatar"> -->
-        <mat-icon
-            
-            [svgIcon]="'heroicons_outline:user-circle'"></mat-icon>
+        <!-- <mat-icon [svgIcon]="'heroicons_outline:user-circle'"></mat-icon> -->
         <!-- <span
             class="absolute right-0 bottom-0 w-2 h-2 rounded-full"
             [ngClass]="{'mr-px mb-px': !showAvatar || !user.avatar,
@@ -17,19 +13,22 @@
                           'bg-amber-500': user.status === 'away',
                           'bg-red-500': user.status === 'busy',
                           'bg-gray-400': user.status === 'not-visible'}"
-        ></span> -->
-    </span>
-</button>
+                          ></span> -->
+    <!-- </span>
+</button> -->
+<span [matMenuTriggerFor]="userActions" class="flex text-lg font-medium" style="align-items: center;cursor: pointer;">
+    <mat-icon [svgIcon]="'heroicons_outline:user-circle'" class="me-1"></mat-icon>
+    {{user.username}}
+    <!-- <mat-icon [svgIcon]="'heroicons_outline:chevron-down'" class="text-md font-small"></mat-icon> -->
+</span>
 
-<mat-menu
-    [xPosition]="'before'"
-    #userActions="matMenu">
-    <button mat-menu-item>
+<mat-menu [xPosition]="'before'" #userActions="matMenu">
+    <!-- <button mat-menu-item>
         <span class="flex flex-col leading-none">
             <span>Signed in as</span>
             <span class="mt-1.5 text-md font-medium">{{user.username}}</span>
         </span>
-    </button>
+    </button> -->
     <!-- <mat-divider class="my-2"></mat-divider> -->
     <!-- <button mat-menu-item>
         <mat-icon [svgIcon]="'heroicons_outline:user-circle'"></mat-icon>
@@ -45,10 +44,8 @@
         <mat-icon [svgIcon]="'heroicons_outline:ellipsis-horizontal-circle'"></mat-icon>
         <span>Status</span>
     </button> -->
-    <mat-divider class="my-2"></mat-divider>
-    <button
-        mat-menu-item
-        (click)="signOut()">
+    <!-- <mat-divider class="my-2"></mat-divider> -->
+    <button mat-menu-item (click)="signOut()">
         <mat-icon [svgIcon]="'heroicons_outline:arrow-right-on-rectangle'"></mat-icon>
         <span>Sign out</span>
     </button>
