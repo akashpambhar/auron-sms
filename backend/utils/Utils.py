@@ -4,6 +4,7 @@ from fastapi import Depends, HTTPException, status
 from models import AuditTrail
 from database import SessionLocal
 from sqlalchemy.exc import IntegrityError
+from datetime import datetime, timezone
 
 ENUM_DATABASE = "database"
 ENUM_ACTIVE_DIRECTORY = "active_directory"
@@ -61,7 +62,7 @@ def decode_jwt(token):
     return (username, auth_mode)
 
 def insert_audit_trail(ip_address, path, method, query_params, username, auth_mode):
-    audit_trail = AuditTrail.AuditTrail(username, ip_address, path, method, query_params, auth_mode)
+    audit_trail = AuditTrail.AuditTrail(username, ip_address, path, method, query_params, auth_mode, datetime.now(timezone.utc))
     db = SessionLocal()
     try:
         db.add(audit_trail)

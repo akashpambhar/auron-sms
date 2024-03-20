@@ -10,6 +10,11 @@ from database import Base, engine
 from database import get_db
 from routers import auth, sms, sms2, sms3, users
 from utils.Utils import decode_jwt, insert_audit_trail
+from database import get_db
+from typing import Annotated
+from schemas import UserSchema
+from models import AuditTrail
+from sqlalchemy import select, desc
 
 Base.metadata.create_all(bind=engine)
 
@@ -69,3 +74,26 @@ def db_session_middleware(request: Request, call_next):
         print(str(e))
 
     return response
+
+@app.get("/audit-trail")
+def get_audit_trail(
+    current_user: Annotated[UserSchema.User, Depends(auth.get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)]):
+   
+    results = db.execute(select(AuditTrail.AuditTrail).order_by(desc(AuditTrail.AuditTrail.timestamp))).all()
+
+    audit_trail = [
+        {
+            "audit_trail_id": result[0].audit_trail_id,
+            "username": result[0].username,
+            "ip_address": result[0].ip_address,
+            "action": result[0].action,
+            "method": result[0].method,
+            "query_params": result[0].query_params,
+            "auth_mode": result[0].auth_mode,
+            "timestamp": result[0].timestamp,
+        }
+        for result in results
+    ]
+
+    return audit_trail

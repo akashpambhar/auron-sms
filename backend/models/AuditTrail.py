@@ -13,12 +13,13 @@ class AuditTrail(Base):
     method = Column(String(10), nullable=False)
     query_params = Column(String(255))
     auth_mode = Column(String(255))
-    timestamp = Column(DateTime, default = datetime.now(timezone.utc), nullable=False)
+    timestamp = Column(DateTime, nullable=False)
 
-    def __init__(self, username, ip_address, action, method, query_params, auth_mode):
+    def __init__(self, username, ip_address, action, method, query_params, auth_mode, timestamp):
         self.username = username
         self.ip_address = ip_address
         self.action = action
         self.method = method
         self.query_params = query_params
         self.auth_mode = auth_mode
+        self.timestamp = timestamp

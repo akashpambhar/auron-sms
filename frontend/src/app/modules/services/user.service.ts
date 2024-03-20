@@ -34,4 +34,8 @@ export class UserService {
   deleteById(id: number): Observable<any> {
     return this.http.delete<any>(this.url + "/users/" + id);
   }
+
+  getAuditTrails(): Observable<any> {
+    return this.http.get<any>(`${this.url}/audit-trail`);
+  }
 }

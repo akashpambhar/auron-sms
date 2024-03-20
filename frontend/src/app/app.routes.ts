@@ -11,6 +11,7 @@ import { NoAccessComponent } from './modules/admin/no-access/no-access.component
 import { SmsList2Component } from './modules/admin/sms-list2/sms-list2.component';
 import { SmsList3Component } from './modules/admin/sms-list3/sms-list3.component';
 import { AdAuthSignInComponent } from './modules/auth/ad-sign-in/ad-sign-in.component';
+import { AuditTrailComponent } from './modules/admin/audit-trail/audit-trail.component';
 
 // @formatter:off
 /* eslint-disable max-len */
@@ -119,8 +120,8 @@ export const appRoutes: Route[] = [
       { path: 'sms-list', component: SmsListComponent },
       { path: 'sms-list2', component: SmsList2Component },
       { path: 'sms-list3', component: SmsList3Component },
-      { path: 'admin-dashboard', component: AdminDashboardComponent }
-
+      { path: 'admin-dashboard', component: AdminDashboardComponent },
+      { path: 'audit-trail', component: AuditTrailComponent }
     ]
   }
 ];
