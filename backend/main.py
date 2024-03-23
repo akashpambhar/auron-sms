@@ -62,14 +62,15 @@ def db_session_middleware(request: Request, call_next):
     try:
         response = call_next(request)
         if all(filter_url not in request.url.__str__() for filter_url in ['docs', 'openapi.json', 'favicon.ico', 'auth/signin', 'auth/ad/signin', 'auth/signup']):
-            username = None
-            auth_mode = None
-            if "Authorization" in request.headers:
-                authorization_header = request.headers["Authorization"]
-                token = authorization_header.split(" ")[1] 
-                username, auth_mode = decode_jwt(token)
+            if request.method != 'OPTIONS':
+                username = None
+                auth_mode = None
+                if "Authorization" in request.headers:
+                    authorization_header = request.headers["Authorization"]
+                    token = authorization_header.split(" ")[1] 
+                    username, auth_mode = decode_jwt(token)
 
-            insert_audit_trail(request.client.host, request.url.path, request.method, request.query_params.__str__(), username, auth_mode)
+                insert_audit_trail(request.client.host, request.url.path, request.method, request.query_params.__str__(), username, auth_mode)
     except Exception as e:
         print(str(e))
 
