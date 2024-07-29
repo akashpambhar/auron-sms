@@ -85,28 +85,23 @@ def login_for_access_token_using_ad(
         )
     ).first()
 
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username or email already exists",
-        )
+    if not existing_user:
+        new_user = User.User(**user_signin.model_dump())
+        new_user.password = get_password_hash(user_signin.password)
+        new_user.email = user_signin.username + "@" + LDAP_DOMAIN
+        new_user.role_id = user.role_id
 
-    new_user = User.User(**user_signin.model_dump())
-    new_user.password = get_password_hash(user.password)
-    new_user.email = user_signin.username + "@" + LDAP_DOMAIN
-    new_user.role_id = user.role_id
-
-    try:
-        db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
-        print("User created successfully")
-    except IntegrityError as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error creating user: {str(e)}",
-        )
+        try:
+            db.add(new_user)
+            db.commit()
+            db.refresh(new_user)
+            print("User created successfully")
+        except IntegrityError as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error creating user: {str(e)}",
+            )
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
