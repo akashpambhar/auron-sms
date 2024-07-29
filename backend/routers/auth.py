@@ -68,7 +68,8 @@ def login_for_access_token_using_database(
 @router.post("/ad/signin")
 def login_for_access_token_using_ad(
     request: Request,
-    user_signin: Annotated[OAuth2PasswordRequestForm, Depends()]
+    user_signin: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: Annotated[Session, Depends(get_db)],
 ) -> TokenSchema.Token:
     user = authenticate_ad_user(user_signin.username, user_signin.password)
     if not user:
@@ -77,6 +78,36 @@ def login_for_access_token_using_ad(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    
+    existing_user = db.execute(
+        select(User.User).where(
+            (User.User.username == user_signin.username)
+        )
+    ).first()
+
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username or email already exists",
+        )
+
+    new_user = User.User(**user_signin.model_dump())
+    new_user.password = get_password_hash(user.password)
+    new_user.email = user_signin.username + "@" + LDAP_DOMAIN
+    new_user.role_id = user.role_id
+
+    try:
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        print("User created successfully")
+    except IntegrityError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error creating user: {str(e)}",
+        )
+
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={
